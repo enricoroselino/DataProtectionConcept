@@ -1,5 +1,6 @@
 using DataProtection.Server;
 using DataProtection.Server.Ciphers;
+using DataProtection.Server.Ciphers.Interfaces;
 using DataProtection.Server.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +12,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.Configure<AESCipherSettings>(builder.Configuration.GetSection(AESCipherSettings.Section));
-builder.Services.AddScoped<ICipher, AESCipherCBCMode>();
+builder.Services.AddOptions<CipherSettings>()
+    .BindConfiguration(CipherSettings.Section);
 
+builder.Services.AddScoped<ITextCipher, TextCipher>();
+builder.Services.AddScoped<IFileCipher, FileCipher>();
 builder.Services.AddDbContext<AppDbContext>(options => { options.UseSqlite("Data Source=DataProtection.db"); });
 
 var app = builder.Build();
@@ -26,10 +29,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.MapPost("/employee", async ([FromBody] NewEmployeeDto dto, AppDbContext dbContext) =>
 {
     var newEmployee = Employee.CreateNew(dto.Name, dto.Ssn);
-    var existingEmployee = dbContext.Employees.FirstOrDefault(e => e.Ssn == newEmployee.Ssn);
+    var existingEmployee = dbContext.Employees.FirstOrDefault(e => e.Ssn == dto.Ssn);
     if (existingEmployee is not null) return Results.Conflict("Employee already exists");
 
     await dbContext.Employees.AddAsync(newEmployee);

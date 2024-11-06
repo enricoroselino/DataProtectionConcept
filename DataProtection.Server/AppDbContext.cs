@@ -1,4 +1,5 @@
 ﻿using DataProtection.Server.Ciphers;
+using DataProtection.Server.Ciphers.Interfaces;
 using DataProtection.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -7,9 +8,9 @@ namespace DataProtection.Server;
 
 public class AppDbContext : DbContext
 {
-    private readonly ICipher _cipher;
+    private readonly ITextCipher _cipher;
 
-    public AppDbContext(DbContextOptions<AppDbContext> options, ICipher cipher) : base(options)
+    public AppDbContext(DbContextOptions<AppDbContext> options, ITextCipher cipher) : base(options)
     {
         _cipher = cipher;
     }
@@ -20,11 +21,15 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        var cipherAsConverter = new ValueConverter<string, string>(v => _cipher.Encrypt(v), v => _cipher.Decrypt(v));
+        var textCipherConverter =
+            new ValueConverter<string, string>(
+                v => _cipher.Encrypt(v).GetAwaiter().GetResult(),
+                v => _cipher.Decrypt(v).GetAwaiter().GetResult()
+            );
 
         modelBuilder.Entity<Employee>()
             .Property(e => e.Ssn)
-            .HasConversion(cipherAsConverter)
+            .HasConversion(textCipherConverter)
             .IsRequired();
     }
 }
