@@ -20,11 +20,11 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        var converter = new ValueConverter<string, string>(v => _cipher.Encrypt(v), v => _cipher.Decrypt(v));
+        var cipherAsConverter = new ValueConverter<string, string>(v => _cipher.Encrypt(v), v => _cipher.Decrypt(v));
 
         modelBuilder.Entity<Employee>()
             .Property(e => e.Ssn)
-            .HasConversion(converter)
+            .HasConversion(cipherAsConverter)
             .IsRequired();
     }
 }
