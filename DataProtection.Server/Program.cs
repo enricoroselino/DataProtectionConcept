@@ -15,8 +15,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddOptions<CipherSettings>()
     .BindConfiguration(CipherSettings.Section);
 
-builder.Services.AddScoped<ITextCipher, TextCipher>();
-builder.Services.AddScoped<IFileCipher, FileCipher>();
+builder.Services
+    .AddScoped<ITextCipher, TextCipher>()
+    .AddScoped<IFileCipher, FileCipher>();
+
 builder.Services.AddDbContext<AppDbContext>(options => { options.UseSqlite("Data Source=DataProtection.db"); });
 
 var app = builder.Build();
@@ -47,7 +49,7 @@ app.MapGet("/employee", async (AppDbContext dbContext) =>
     return Results.Ok(employees);
 });
 
-app.Run();
+await app.RunAsync();
 
 namespace DataProtection.Server
 {

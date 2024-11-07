@@ -1,5 +1,4 @@
 ﻿using System.Security.Cryptography;
-using System.Text;
 using DataProtection.Server.Ciphers.Interfaces;
 using Microsoft.Extensions.Options;
 
@@ -23,33 +22,44 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
         AesConcrete.Mode = CipherMode.CBC;
     }
 
-    public async Task<byte[]> Encrypt(byte[] plainDataBytes)
+    public async Task<byte[]> Encrypt(byte[] plainDataBytes, CancellationToken cancellationToken = default)
     {
-        // CBC IV should be unique every encryption
-        GenerateIv();
-        var encryptor = AesConcrete.CreateEncryptor(this.Key, this.IV);
+        var result = await Task.Run(EncryptAction, cancellationToken);
+        return result;
 
-        using var ms = new MemoryStream();
-        await using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
-        await cs.WriteAsync(plainDataBytes);
-        await cs.FlushFinalBlockAsync();
+        async Task<byte[]>? EncryptAction()
+        {
+            // CBC IV should be unique every encryption
+            GenerateIv();
+            var encryptor = AesConcrete.CreateEncryptor(this.Key, this.IV);
 
-        var combinedData = CombineData(encryptedData: ms.ToArray());
-        return combinedData;
+            using var ms = new MemoryStream();
+            await using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
+            await cs.WriteAsync(plainDataBytes, cancellationToken);
+            await cs.FlushFinalBlockAsync(cancellationToken);
+
+            var combinedData = CombineData(encryptedData: ms.ToArray());
+            return combinedData;
+        }
     }
 
-    public async Task<byte[]> Decrypt(byte[] encryptedDataBytes)
+    public async Task<byte[]> Decrypt(byte[] encryptedDataBytes, CancellationToken cancellationToken = default)
     {
-        var cipherData = ExtractData(encryptedDataBytes);
+        var result = await Task.Run(DecryptAction, cancellationToken);
+        return result;
 
-        var decryptor = AesConcrete.CreateDecryptor(this.Key, this.IV);
+        async Task<byte[]>? DecryptAction()
+        {
+            var cipherData = ExtractData(encryptedDataBytes);
 
-        using var ms = new MemoryStream(cipherData);
-        await using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
+            var decryptor = AesConcrete.CreateDecryptor(this.Key, this.IV);
+            using var ms = new MemoryStream(cipherData);
+            await using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
 
-        using var decryptedStream = new MemoryStream();
-        await cs.CopyToAsync(decryptedStream);
-        return decryptedStream.ToArray();
+            using var decryptedStream = new MemoryStream();
+            await cs.CopyToAsync(decryptedStream, cancellationToken);
+            return decryptedStream.ToArray();
+        }
     }
 
     private byte[] CombineData(byte[] encryptedData)
@@ -112,5 +122,6 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
     private void GenerateIv()
     {
         this.IV = CipherHelper.GenerateRandomBytes(IvDefinedLength);
+        ArgumentOutOfRangeException.ThrowIfNotEqual(this.IV.Length, IvDefinedLength);
     }
 }

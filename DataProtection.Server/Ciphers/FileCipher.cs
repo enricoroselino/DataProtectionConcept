@@ -4,32 +4,28 @@ using Microsoft.Extensions.Options;
 
 namespace DataProtection.Server.Ciphers;
 
+/// <summary>
+/// File cipher using AES256 GCM mode.
+/// </summary>
 public class FileCipher : IFileCipher
 {
     private readonly IOptions<CipherSettings> _cipherOptions;
-    private const AesCipherMode CipherMode = AesCipherMode.CBC;
+    private const AesCipherMode CipherMode = AesCipherMode.GCM;
 
     public FileCipher(IOptions<CipherSettings> cipherOptions)
     {
         _cipherOptions = cipherOptions;
     }
 
-    public async Task<byte[]> Encrypt(IFormFile file)
-    {
-        using var fs = new MemoryStream();
-        await file.CopyToAsync(fs);
-        return await Encrypt(fs.ToArray());
-    }
-
-    public async Task<byte[]> Encrypt(byte[] fileBytes)
+    public async Task<byte[]> Encrypt(byte[] data)
     {
         await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
-        return await cipher.Encrypt(fileBytes);
+        return await cipher.Encrypt(data);
     }
 
-    public async Task<byte[]> Decrypt(byte[] encryptedFileBytes)
+    public async Task<byte[]> Decrypt(byte[] data)
     {
         await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
-        return await cipher.Decrypt(encryptedFileBytes);
+        return await cipher.Decrypt(data);
     }
 }

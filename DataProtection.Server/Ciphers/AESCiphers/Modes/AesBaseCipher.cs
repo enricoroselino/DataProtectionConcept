@@ -19,7 +19,8 @@ public abstract class AesBaseCipher : IDisposable, IAsyncDisposable
         var saltedKey = CipherHelper.ApplySalt(
             options.Value.Key,
             options.Value.Salt,
-            KeyDefinedLength
+            KeyDefinedLength,
+            options.Value.Iterations
         );
 
         ArgumentOutOfRangeException.ThrowIfNotEqual(saltedKey.Length, KeyDefinedLength);
