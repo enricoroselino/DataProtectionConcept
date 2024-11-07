@@ -7,7 +7,7 @@ using NeoSmart.Utils;
 namespace DataProtection.Server.Ciphers;
 
 /// <summary>
-/// Database cipher using AES ECB mode.
+/// Database cipher using AES256 ECB mode.
 /// </summary>
 public sealed class TextCipher : ITextCipher
 {

@@ -2,7 +2,6 @@
 
 public interface IFileCipher
 {
-    public Task<byte[]> Encrypt(IFormFile file);
-    public Task<byte[]> Encrypt(byte[] fileBytes);
-    public Task<byte[]> Decrypt(byte[] encryptedFileBytes);
+    public Task<byte[]> Encrypt(byte[] data);
+    public Task<byte[]> Decrypt(byte[] data);
 }
