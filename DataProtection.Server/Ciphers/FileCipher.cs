@@ -20,7 +20,7 @@ public class FileCipher : IFileCipher
     {
         return await Task.Run(EncryptFileAction, cancellationToken);
 
-        async Task<byte[]>? EncryptFileAction()
+        async Task<byte[]> EncryptFileAction()
         {
             await using var ms = new MemoryStream();
             await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
@@ -33,7 +33,7 @@ public class FileCipher : IFileCipher
     {
         return await Task.Run(DecryptFileAction, cancellationToken);
 
-        async Task<byte[]>? DecryptFileAction()
+        async Task<byte[]> DecryptFileAction()
         {
             await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
             return await cipher.Decrypt(data, cancellationToken);
