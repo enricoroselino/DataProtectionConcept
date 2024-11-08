@@ -31,8 +31,7 @@ public sealed class AesGcmCipher : ICipher
 
     public async Task<byte[]> Encrypt(byte[] plainDataBytes, CancellationToken cancellationToken = default)
     {
-        var result = await Task.Run(EncryptAction, cancellationToken);
-        return result;
+        return await Task.Run(EncryptAction, cancellationToken);
 
         byte[] EncryptAction()
         {
@@ -88,8 +87,7 @@ public sealed class AesGcmCipher : ICipher
 
     public async Task<byte[]> Decrypt(byte[] encryptedDataBytes, CancellationToken cancellationToken = default)
     {
-        var result = await Task.Run(DecryptAction, cancellationToken);
-        return result;
+        return await Task.Run(DecryptAction, cancellationToken);
 
         byte[] DecryptAction()
         {

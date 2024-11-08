@@ -16,10 +16,9 @@ public class AesEcbCipher : AesBaseCipher, ICipher
 
     public async Task<byte[]> Encrypt(byte[] plainDataBytes, CancellationToken cancellationToken = default)
     {
-        var result = await Task.Run(EncryptAction, cancellationToken);
-        return result;
+        return await Task.Run(EncryptAction, cancellationToken);
 
-        async Task<byte[]>? EncryptAction()
+        async Task<byte[]> EncryptAction()
         {
             var encryptor = AesConcrete.CreateEncryptor(this.Key, null);
 
@@ -33,10 +32,9 @@ public class AesEcbCipher : AesBaseCipher, ICipher
 
     public async Task<byte[]> Decrypt(byte[] encryptedDataBytes, CancellationToken cancellationToken = default)
     {
-        var result = await Task.Run(Function, cancellationToken);
-        return result;
+        return await Task.Run(Function, cancellationToken);
 
-        async Task<byte[]>? Function()
+        async Task<byte[]> Function()
         {
             var decryptor = AesConcrete.CreateDecryptor(this.Key, null);
 

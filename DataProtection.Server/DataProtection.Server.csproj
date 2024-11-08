@@ -21,6 +21,9 @@
 
     <ItemGroup>
         <Compile Remove="EmployeeConfiguration.cs"/>
+        <Compile Remove="Ciphers\FileChunkCipher.cs" />
+        <Compile Remove="Ciphers\FileCipherMode.cs" />
+        <Compile Remove="Ciphers\FileCipherFactory.cs" />
     </ItemGroup>
 
 </Project>

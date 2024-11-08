@@ -24,10 +24,9 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
 
     public async Task<byte[]> Encrypt(byte[] plainDataBytes, CancellationToken cancellationToken = default)
     {
-        var result = await Task.Run(EncryptAction, cancellationToken);
-        return result;
+        return await Task.Run(EncryptAction, cancellationToken);
 
-        async Task<byte[]>? EncryptAction()
+        async Task<byte[]> EncryptAction()
         {
             // CBC IV should be unique every encryption
             GenerateIv();
@@ -45,10 +44,9 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
 
     public async Task<byte[]> Decrypt(byte[] encryptedDataBytes, CancellationToken cancellationToken = default)
     {
-        var result = await Task.Run(DecryptAction, cancellationToken);
-        return result;
+        return await Task.Run(DecryptAction, cancellationToken);
 
-        async Task<byte[]>? DecryptAction()
+        async Task<byte[]> DecryptAction()
         {
             var cipherData = ExtractData(encryptedDataBytes);
 

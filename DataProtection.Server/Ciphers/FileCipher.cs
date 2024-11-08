@@ -4,9 +4,6 @@ using Microsoft.Extensions.Options;
 
 namespace DataProtection.Server.Ciphers;
 
-/// <summary>
-/// File cipher using AES256 GCM mode.
-/// </summary>
 public class FileCipher : IFileCipher
 {
     private readonly IOptions<CipherSettings> _cipherOptions;
@@ -17,15 +14,29 @@ public class FileCipher : IFileCipher
         _cipherOptions = cipherOptions;
     }
 
-    public async Task<byte[]> Encrypt(byte[] data)
+    public string Suffix => $".aes-{CipherMode.ToString().ToLower()}.enc";
+
+    public async Task<byte[]> Encrypt(IFormFile file, CancellationToken cancellationToken = default)
     {
-        await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
-        return await cipher.Encrypt(data);
+        return await Task.Run(EncryptFileAction, cancellationToken);
+
+        async Task<byte[]>? EncryptFileAction()
+        {
+            await using var ms = new MemoryStream();
+            await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
+            await file.CopyToAsync(ms, cancellationToken);
+            return await cipher.Encrypt(ms.ToArray(), cancellationToken);
+        }
     }
 
-    public async Task<byte[]> Decrypt(byte[] data)
+    public async Task<byte[]> Decrypt(byte[] data, CancellationToken cancellationToken = default)
     {
-        await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
-        return await cipher.Decrypt(data);
+        return await Task.Run(DecryptFileAction, cancellationToken);
+
+        async Task<byte[]>? DecryptFileAction()
+        {
+            await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
+            return await cipher.Decrypt(data, cancellationToken);
+        }
     }
 }
