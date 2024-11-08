@@ -11,16 +11,17 @@ public class LocalFileHandler : IFileHandler
         _fileCipher = fileCipher;
     }
 
-    public async Task Save(IFormFile file, CancellationToken cancellationToken = default)
+    public async Task Save(IFormFile file, string path, CancellationToken cancellationToken = default)
     {
-        var filename = file.GetFileName() + _fileCipher.Suffix;
+        var filename = Path.Combine(path, file.FileName) + _fileCipher.Suffix;
         var encrypted = await _fileCipher.Encrypt(file, cancellationToken);
         await File.WriteAllBytesAsync(filename, encrypted, cancellationToken);
     }
 
     public async Task<byte[]> Load(string path, CancellationToken cancellationToken = default)
     {
-        var data = await File.ReadAllBytesAsync(path + _fileCipher.Suffix, cancellationToken);
+        var filePath = Path.TrimEndingDirectorySeparator(path) + _fileCipher.Suffix;
+        var data = await File.ReadAllBytesAsync(filePath, cancellationToken);
         return await _fileCipher.Decrypt(data, cancellationToken);
     }
 }

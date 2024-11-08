@@ -61,8 +61,8 @@ app.MapGet("/employee", async (AppDbContext dbContext) =>
 app.MapPost("/upload",
         async (IFormFile file, IFileHandler fileHandler, CancellationToken cancellationToken) =>
         {
-            await fileHandler.Save(file, cancellationToken);
-            var bytes = await fileHandler.Load(file.GetFileName(), cancellationToken);
+            await fileHandler.Save(file,"", cancellationToken);
+            var bytes = await fileHandler.Load(file.FileName, cancellationToken);
             return Results.Ok(UrlBase64.Encode(bytes));
         })
     .DisableAntiforgery();
