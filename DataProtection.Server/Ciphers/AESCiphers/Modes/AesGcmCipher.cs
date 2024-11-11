@@ -14,7 +14,7 @@ public sealed class AesGcmCipher : ICipher
     private readonly AesGcm _aesGcm;
 
     private const int KeyDefinedLength = 32;
-    private const int TagDefinedLength = 32;
+    private const int TagDefinedLength = 16;
     private const int NonceDefinedLength = 12;
 
     public AesGcmCipher(IOptions<CipherSettings> options)

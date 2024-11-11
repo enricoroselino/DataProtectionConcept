@@ -7,7 +7,7 @@ namespace DataProtection.Server.Ciphers;
 public class FileCipher : IFileCipher
 {
     private readonly IOptions<CipherSettings> _cipherOptions;
-    private const AesCipherMode CipherMode = AesCipherMode.CBC;
+    private const AesCipherMode CipherMode = AesCipherMode.GCM;
 
     public FileCipher(IOptions<CipherSettings> cipherOptions)
     {
