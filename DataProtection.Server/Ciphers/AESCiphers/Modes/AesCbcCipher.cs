@@ -10,6 +10,7 @@ namespace DataProtection.Server.Ciphers.AESCiphers.Modes;
 public sealed class AesCbcCipher : AesBaseCipher, ICipher
 {
     private const int IvDefinedLength = 16;
+    private const int TagDefinedLength = 32; // 256-bit HMAC
 
     private byte[] IV
     {
@@ -30,32 +31,22 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
         {
             GenerateIv();
             var cipherData = await TransformToCipherData(plainDataBytes, cancellationToken);
-            var combinedData = CombineData(cipherData);
-            return combinedData;
+            using var hmac = new HMACSHA256(Key);
+            var tag = hmac.ComputeHash(cipherData);
+
+            return CombineData(cipherData, tag);
         }
     }
 
-    public async Task<byte[]> Decrypt(byte[] encryptedData, CancellationToken cancellationToken = default)
-    {
-        return await Task.Run(DecryptAction, cancellationToken);
-
-        async Task<byte[]> DecryptAction()
-        {
-            var cipherData = ExtractCipherData(encryptedData);
-            var plainData = await TransformToPlainText(cipherData, cancellationToken);
-            return plainData;
-        }
-    }
-
-    private byte[] CombineData(byte[] encryptedData)
+    private byte[] CombineData(byte[] encryptedData, byte[] tag)
     {
         // prepend the IV with the encrypted data
-        // [IV, EncryptedData]
-        var combinedData = new byte[this.IV.Length + encryptedData.Length];
+        // [IV, EncryptedData, Tag]
+        var combinedData = new byte[IV.Length + encryptedData.Length + tag.Length];
 
         // save the IV
         Array.Copy(
-            sourceArray: this.IV,
+            sourceArray: IV,
             sourceIndex: 0,
             destinationArray: combinedData,
             destinationIndex: 0,
@@ -71,13 +62,36 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
             encryptedData.Length
         );
 
+        // save the tag
+        Array.Copy(
+            sourceArray: tag,
+            sourceIndex: 0,
+            destinationArray: combinedData,
+            destinationIndex: encryptedData.Length + IvDefinedLength,
+            tag.Length
+        );
+
         return combinedData;
     }
 
-    private byte[] ExtractCipherData(byte[] combinedData)
+
+    public async Task<byte[]> Decrypt(byte[] encryptedData, CancellationToken cancellationToken = default)
+    {
+        return await Task.Run(DecryptAction, cancellationToken);
+
+        async Task<byte[]> DecryptAction()
+        {
+            ExtractMetaData(encryptedData);
+            var cipherData = ExtractCipherData(encryptedData);
+            var plainData = await TransformToPlainText(cipherData, cancellationToken);
+            return plainData;
+        }
+    }
+
+    private void ExtractMetaData(byte[] combinedData)
     {
         // incoming data is consist of IV and encrypted data
-        // [IV, EncryptedData]
+        // [IV, EncryptedData, Tag]
 
         // Extract the saved IV
         var iv = new byte[IvDefinedLength];
@@ -88,10 +102,19 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
             destinationIndex: 0,
             IvDefinedLength
         );
-        this.IV = iv;
 
-        // Extract the real encrypted data (w/o IV)
-        var cipherData = new byte[combinedData.Length - IvDefinedLength];
+        IV = iv;
+
+        ArgumentOutOfRangeException.ThrowIfNotEqual(IV.Length, IvDefinedLength);
+    }
+
+    private byte[] ExtractCipherData(byte[] combinedData)
+    {
+        // incoming data is consist of IV and encrypted data
+        // [IV, EncryptedData, Tag]
+
+        // Extract the real encrypted data (w/o IV dan Tag)
+        var cipherData = new byte[combinedData.Length - IvDefinedLength - TagDefinedLength];
         Array.Copy(
             sourceArray: combinedData,
             sourceIndex: IvDefinedLength,
@@ -100,13 +123,27 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
             cipherData.Length
         );
 
-        ArgumentOutOfRangeException.ThrowIfNotEqual(this.IV.Length, IvDefinedLength);
+        var tag = new byte[TagDefinedLength];
+        Array.Copy(
+            sourceArray: combinedData,
+            sourceIndex: combinedData.Length - TagDefinedLength,
+            destinationArray: tag,
+            destinationIndex: 0,
+            TagDefinedLength
+        );
+
+        ArgumentOutOfRangeException.ThrowIfNotEqual(tag.Length, TagDefinedLength);
+
+        using var hmac = new HMACSHA256(Key);
+        var expectedTag = hmac.ComputeHash(cipherData);
+        if (!expectedTag.SequenceEqual(tag)) throw new CryptographicException("Tag mismatch, data tampered.");
+
         return cipherData;
     }
 
     private void GenerateIv()
     {
-        this.IV = CipherHelper.GenerateRandomBytes(IvDefinedLength);
-        ArgumentOutOfRangeException.ThrowIfNotEqual(this.IV.Length, IvDefinedLength);
+        IV = CipherHelper.GenerateRandomBytes(IvDefinedLength);
+        ArgumentOutOfRangeException.ThrowIfNotEqual(IV.Length, IvDefinedLength);
     }
 }
