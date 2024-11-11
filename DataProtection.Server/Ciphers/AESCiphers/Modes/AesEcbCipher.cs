@@ -18,17 +18,6 @@ public class AesEcbCipher : AesBaseCipher, ICipher
     {
         return await Task.Run(EncryptAction, cancellationToken);
 
-        // async Task<byte[]> EncryptAction()
-        // {
-        //     var encryptor = AesCipher.CreateEncryptor(this.Key, null);
-        //
-        //     using var ms = new MemoryStream();
-        //     await using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
-        //     await cs.WriteAsync(plainDataBytes, cancellationToken);
-        //     await cs.FlushFinalBlockAsync(cancellationToken);
-        //     return ms.ToArray();
-        // }
-
         async Task<byte[]> EncryptAction()
         {
             var cipherData = await TransformToCipherData(plainDataBytes, cancellationToken);
@@ -39,18 +28,6 @@ public class AesEcbCipher : AesBaseCipher, ICipher
     public async Task<byte[]> Decrypt(byte[] encryptedData, CancellationToken cancellationToken = default)
     {
         return await Task.Run(DecryptAction, cancellationToken);
-
-        // async Task<byte[]> DecryptAction()
-        // {
-        //     var decryptor = AesCipher.CreateDecryptor(this.Key, null);
-        //
-        //     using var ms = new MemoryStream(encryptedDataBytes);
-        //     await using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
-        //
-        //     using var decryptedStream = new MemoryStream();
-        //     await cs.CopyToAsync(decryptedStream, cancellationToken);
-        //     return decryptedStream.ToArray();
-        // }
 
         async Task<byte[]> DecryptAction()
         {
