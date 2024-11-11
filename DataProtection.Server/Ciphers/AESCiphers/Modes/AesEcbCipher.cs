@@ -14,13 +14,13 @@ public class AesEcbCipher : AesBaseCipher, ICipher
         AesCipher.Mode = CipherMode.ECB;
     }
 
-    public async Task<byte[]> Encrypt(byte[] plainDataBytes, CancellationToken cancellationToken = default)
+    public async Task<byte[]> Encrypt(byte[] plainData, CancellationToken cancellationToken = default)
     {
         return await Task.Run(EncryptAction, cancellationToken);
 
         async Task<byte[]> EncryptAction()
         {
-            var cipherData = await TransformToCipherData(plainDataBytes, cancellationToken);
+            var cipherData = await TransformToCipherData(plainData, cancellationToken);
             return cipherData;
         }
     }

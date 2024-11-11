@@ -23,14 +23,14 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
         AesCipher.Mode = CipherMode.CBC;
     }
 
-    public async Task<byte[]> Encrypt(byte[] plainDataBytes, CancellationToken cancellationToken = default)
+    public async Task<byte[]> Encrypt(byte[] plainData, CancellationToken cancellationToken = default)
     {
         return await Task.Run(EncryptAction, cancellationToken);
 
         async Task<byte[]> EncryptAction()
         {
             GenerateIv();
-            var cipherData = await TransformToCipherData(plainDataBytes, cancellationToken);
+            var cipherData = await TransformToCipherData(plainData, cancellationToken);
             var tag = CipherHelper.GenerateHmac256(cipherData, Key);
             return CombineData(cipherData, tag);
         }
