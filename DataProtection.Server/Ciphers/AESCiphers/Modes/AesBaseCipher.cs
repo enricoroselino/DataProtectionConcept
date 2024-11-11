@@ -5,13 +5,14 @@ namespace DataProtection.Server.Ciphers.AESCiphers.Modes;
 
 public abstract class AesBaseCipher : IDisposable, IAsyncDisposable
 {
-    protected readonly Aes AesConcrete;
+    protected readonly SymmetricAlgorithm AesCipher;
     private const int KeyDefinedLength = 32;
+    private bool _disposed;
 
     protected byte[] Key
     {
-        get => AesConcrete.Key;
-        private init => AesConcrete.Key = value;
+        get => AesCipher.Key;
+        private init => AesCipher.Key = value;
     }
 
     protected AesBaseCipher(IOptions<CipherSettings> options)
@@ -25,20 +26,74 @@ public abstract class AesBaseCipher : IDisposable, IAsyncDisposable
 
         ArgumentOutOfRangeException.ThrowIfNotEqual(saltedKey.Length, KeyDefinedLength);
 
-        AesConcrete = Aes.Create();
-        AesConcrete.Padding = PaddingMode.PKCS7;
-        AesConcrete.KeySize = 256;
+        AesCipher = Aes.Create();
+        AesCipher.Padding = PaddingMode.PKCS7;
+        AesCipher.KeySize = 256;
         Key = saltedKey;
     }
 
+    protected async Task<byte[]> TransformToCipherData(
+        byte[] plainData,
+        CancellationToken cancellationToken = default)
+    {
+        var encryptor = AesCipher.CreateEncryptor(AesCipher.Key, AesCipher.IV);
+
+        // encrypt in one shot to save resources, not using CryptoStream if possible
+        if (encryptor.CanTransformMultipleBlocks)
+            return encryptor.TransformFinalBlock(plainData, 0, plainData.Length);
+
+        using var ms = new MemoryStream();
+        await using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
+        await cs.WriteAsync(plainData, cancellationToken);
+        await cs.FlushFinalBlockAsync(cancellationToken);
+        return ms.ToArray();
+    }
+
+    protected async Task<byte[]> TransformToPlainText(byte[] cipherText, CancellationToken cancellationToken = default)
+    {
+        var decryptor = AesCipher.CreateDecryptor(AesCipher.Key, AesCipher.IV);
+
+        // idk if decrypt can use the same way like encrypting, just leave using CryptoStream
+        using var ms = new MemoryStream(cipherText);
+        await using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
+
+        using var decryptedStream = new MemoryStream();
+        await cs.CopyToAsync(decryptedStream, cancellationToken);
+        return decryptedStream.ToArray();
+    }
+
+    // Synchronous Dispose
     public void Dispose()
     {
-        AesConcrete.Dispose();
+        Dispose(true);
         GC.SuppressFinalize(this);
     }
 
+    // Asynchronous Dispose
     public async ValueTask DisposeAsync()
     {
-        await Task.FromResult(Dispose);
+        Dispose(true); // Use synchronous dispose method as there's no async disposal needed
+        GC.SuppressFinalize(this);
+        await ValueTask.CompletedTask; // Satisfy async method requirements
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
+
+        if (disposing)
+        {
+            // Dispose managed resources here
+            AesCipher.Dispose();
+        }
+
+        _disposed = true;
+    }
+
+    // Finalizer
+    ~AesBaseCipher()
+    {
+        Dispose(false);
     }
 }

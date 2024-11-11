@@ -7,7 +7,7 @@ using NeoSmart.Utils;
 namespace DataProtection.Server.Ciphers;
 
 /// <summary>
-/// Database cipher using AES256 ECB mode.
+/// Database cipher using AES256 ECB mode for consistency.
 /// </summary>
 public sealed class TextCipher : ITextCipher
 {
@@ -23,6 +23,10 @@ public sealed class TextCipher : ITextCipher
     {
         await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
         var plainBytes = Encoding.UTF8.GetBytes(plainText);
+
+        // why are you encrypting null or blank value ?
+        ArgumentException.ThrowIfNullOrWhiteSpace(plainText);
+
         var encrypted = await cipher.Encrypt(plainBytes);
         return UrlBase64.Encode(encrypted);
     }

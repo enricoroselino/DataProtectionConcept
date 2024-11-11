@@ -11,39 +11,51 @@ public class AesEcbCipher : AesBaseCipher, ICipher
 {
     public AesEcbCipher(IOptions<CipherSettings> options) : base(options)
     {
-        AesConcrete.Mode = CipherMode.ECB;
+        AesCipher.Mode = CipherMode.ECB;
     }
 
     public async Task<byte[]> Encrypt(byte[] plainDataBytes, CancellationToken cancellationToken = default)
     {
         return await Task.Run(EncryptAction, cancellationToken);
 
+        // async Task<byte[]> EncryptAction()
+        // {
+        //     var encryptor = AesCipher.CreateEncryptor(this.Key, null);
+        //
+        //     using var ms = new MemoryStream();
+        //     await using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
+        //     await cs.WriteAsync(plainDataBytes, cancellationToken);
+        //     await cs.FlushFinalBlockAsync(cancellationToken);
+        //     return ms.ToArray();
+        // }
+
         async Task<byte[]> EncryptAction()
         {
-            var encryptor = AesConcrete.CreateEncryptor(this.Key, null);
-
-            using var ms = new MemoryStream();
-            await using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
-            await cs.WriteAsync(plainDataBytes, cancellationToken);
-            await cs.FlushFinalBlockAsync(cancellationToken);
-            return ms.ToArray();
+            var cipherData = await TransformToCipherData(plainDataBytes, cancellationToken);
+            return cipherData;
         }
     }
 
-    public async Task<byte[]> Decrypt(byte[] encryptedDataBytes, CancellationToken cancellationToken = default)
+    public async Task<byte[]> Decrypt(byte[] encryptedData, CancellationToken cancellationToken = default)
     {
-        return await Task.Run(Function, cancellationToken);
+        return await Task.Run(DecryptAction, cancellationToken);
 
-        async Task<byte[]> Function()
+        // async Task<byte[]> DecryptAction()
+        // {
+        //     var decryptor = AesCipher.CreateDecryptor(this.Key, null);
+        //
+        //     using var ms = new MemoryStream(encryptedDataBytes);
+        //     await using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
+        //
+        //     using var decryptedStream = new MemoryStream();
+        //     await cs.CopyToAsync(decryptedStream, cancellationToken);
+        //     return decryptedStream.ToArray();
+        // }
+
+        async Task<byte[]> DecryptAction()
         {
-            var decryptor = AesConcrete.CreateDecryptor(this.Key, null);
-
-            using var ms = new MemoryStream(encryptedDataBytes);
-            await using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
-
-            using var decryptedStream = new MemoryStream();
-            await cs.CopyToAsync(decryptedStream, cancellationToken);
-            return decryptedStream.ToArray();
+            var plainData = await TransformToPlainText(encryptedData, cancellationToken);
+            return plainData;
         }
     }
 }

@@ -13,13 +13,13 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
 
     private byte[] IV
     {
-        get => AesConcrete.IV;
-        set => AesConcrete.IV = value;
+        get => AesCipher.IV;
+        set => AesCipher.IV = value;
     }
 
     public AesCbcCipher(IOptions<CipherSettings> options) : base(options)
     {
-        AesConcrete.Mode = CipherMode.CBC;
+        AesCipher.Mode = CipherMode.CBC;
     }
 
     public async Task<byte[]> Encrypt(byte[] plainDataBytes, CancellationToken cancellationToken = default)
@@ -28,35 +28,22 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
 
         async Task<byte[]> EncryptAction()
         {
-            // CBC IV should be unique every encryption
             GenerateIv();
-            var encryptor = AesConcrete.CreateEncryptor(this.Key, this.IV);
-
-            using var ms = new MemoryStream();
-            await using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
-            await cs.WriteAsync(plainDataBytes, cancellationToken);
-            await cs.FlushFinalBlockAsync(cancellationToken);
-
-            var combinedData = CombineData(encryptedData: ms.ToArray());
+            var cipherData = await TransformToCipherData(plainDataBytes, cancellationToken);
+            var combinedData = CombineData(cipherData);
             return combinedData;
         }
     }
 
-    public async Task<byte[]> Decrypt(byte[] encryptedDataBytes, CancellationToken cancellationToken = default)
+    public async Task<byte[]> Decrypt(byte[] encryptedData, CancellationToken cancellationToken = default)
     {
         return await Task.Run(DecryptAction, cancellationToken);
 
         async Task<byte[]> DecryptAction()
         {
-            var cipherData = ExtractData(encryptedDataBytes);
-
-            var decryptor = AesConcrete.CreateDecryptor(this.Key, this.IV);
-            using var ms = new MemoryStream(cipherData);
-            await using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
-
-            using var decryptedStream = new MemoryStream();
-            await cs.CopyToAsync(decryptedStream, cancellationToken);
-            return decryptedStream.ToArray();
+            var cipherData = ExtractCipherData(encryptedData);
+            var plainData = await TransformToPlainText(cipherData, cancellationToken);
+            return plainData;
         }
     }
 
@@ -87,7 +74,7 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
         return combinedData;
     }
 
-    private byte[] ExtractData(byte[] combinedData)
+    private byte[] ExtractCipherData(byte[] combinedData)
     {
         // incoming data is consist of IV and encrypted data
         // [IV, EncryptedData]
