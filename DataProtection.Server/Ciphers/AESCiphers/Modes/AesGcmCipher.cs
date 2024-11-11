@@ -10,10 +10,11 @@ namespace DataProtection.Server.Ciphers.AESCiphers.Modes;
 /// </summary>
 public sealed class AesGcmCipher : ICipher
 {
+    private bool _disposed;
     private readonly AesGcm _aesGcm;
 
     private const int KeyDefinedLength = 32;
-    private const int TagDefinedLength = 16;
+    private const int TagDefinedLength = 32;
     private const int NonceDefinedLength = 12;
 
     public AesGcmCipher(IOptions<CipherSettings> options)
@@ -85,14 +86,14 @@ public sealed class AesGcmCipher : ICipher
         return combinedData;
     }
 
-    public async Task<byte[]> Decrypt(byte[] encryptedDataBytes, CancellationToken cancellationToken = default)
+    public async Task<byte[]> Decrypt(byte[] encryptedData, CancellationToken cancellationToken = default)
     {
         return await Task.Run(DecryptAction, cancellationToken);
 
         byte[] DecryptAction()
         {
-            var metadata = ExtractMetadata(encryptedDataBytes);
-            var cipherData = ExtractCipherData(encryptedDataBytes);
+            var metadata = ExtractMetadata(encryptedData);
+            var cipherData = ExtractCipherData(encryptedData);
 
             var decryptedData = new byte[cipherData.Length];
             _aesGcm.Decrypt(metadata.Nonce, cipherData, metadata.Tag, decryptedData);
@@ -144,12 +145,35 @@ public sealed class AesGcmCipher : ICipher
 
     public void Dispose()
     {
-        _aesGcm.Dispose();
+        Dispose(true);
         GC.SuppressFinalize(this);
     }
 
+    // Asynchronous Dispose
     public async ValueTask DisposeAsync()
     {
-        await Task.FromResult(Dispose);
+        Dispose(true); // Use synchronous dispose method as there's no async disposal needed
+        GC.SuppressFinalize(this);
+        await ValueTask.CompletedTask; // Satisfy async method requirements
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
+
+        if (disposing)
+        {
+            // Dispose managed resources here
+            _aesGcm.Dispose();
+        }
+
+        _disposed = true;
+    }
+
+    // Finalizer
+    ~AesGcmCipher()
+    {
+        Dispose(false);
     }
 }

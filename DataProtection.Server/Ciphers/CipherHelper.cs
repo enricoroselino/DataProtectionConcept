@@ -24,4 +24,10 @@ public static class CipherHelper
     {
         return RandomNumberGenerator.GetBytes(bytesRequested);
     }
+
+    public static byte[] GenerateHmac256(byte[] data, byte[] key)
+    {
+        using var hmac = new HMACSHA256(key);
+        return hmac.ComputeHash(data);
+    }
 }

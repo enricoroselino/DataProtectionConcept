@@ -7,14 +7,14 @@ namespace DataProtection.Server.Ciphers;
 public class FileCipher : IFileCipher
 {
     private readonly IOptions<CipherSettings> _cipherOptions;
-    private const AesCipherMode CipherMode = AesCipherMode.GCM;
+    private const AesCipherMode CipherMode = AesCipherMode.CBC;
 
     public FileCipher(IOptions<CipherSettings> cipherOptions)
     {
         _cipherOptions = cipherOptions;
     }
 
-    public string Suffix => $".aes-{CipherMode.ToString().ToLower()}.enc";
+    public string Suffix => $".enc.aes-{CipherMode.ToString().ToLower()}";
 
     public async Task<byte[]> Encrypt(IFormFile file, CancellationToken cancellationToken = default)
     {
@@ -22,21 +22,21 @@ public class FileCipher : IFileCipher
 
         async Task<byte[]> EncryptFileAction()
         {
-            await using var ms = new MemoryStream();
             await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
-            await file.CopyToAsync(ms, cancellationToken);
-            return await cipher.Encrypt(ms.ToArray(), cancellationToken);
+            await using var fileStream = new MemoryStream();
+            await file.CopyToAsync(fileStream, cancellationToken);
+            return await cipher.Encrypt(fileStream.ToArray(), cancellationToken);
         }
     }
 
-    public async Task<byte[]> Decrypt(byte[] data, CancellationToken cancellationToken = default)
+    public async Task<byte[]> Decrypt(byte[] encryptedData, CancellationToken cancellationToken = default)
     {
         return await Task.Run(DecryptFileAction, cancellationToken);
 
         async Task<byte[]> DecryptFileAction()
         {
             await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
-            return await cipher.Decrypt(data, cancellationToken);
+            return await cipher.Decrypt(encryptedData, cancellationToken);
         }
     }
 }
