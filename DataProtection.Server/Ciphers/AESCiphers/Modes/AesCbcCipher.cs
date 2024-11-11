@@ -31,9 +31,7 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
         {
             GenerateIv();
             var cipherData = await TransformToCipherData(plainDataBytes, cancellationToken);
-            using var hmac = new HMACSHA256(Key);
-            var tag = hmac.ComputeHash(cipherData);
-
+            var tag = CipherHelper.GenerateHmac256(cipherData, Key);
             return CombineData(cipherData, tag);
         }
     }
@@ -134,10 +132,8 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
 
         ArgumentOutOfRangeException.ThrowIfNotEqual(tag.Length, TagDefinedLength);
 
-        using var hmac = new HMACSHA256(Key);
-        var expectedTag = hmac.ComputeHash(cipherData);
-        if (!expectedTag.SequenceEqual(tag)) throw new CryptographicException("Tag mismatch, data tampered.");
-
+        var expectedTag = CipherHelper.GenerateHmac256(cipherData, Key);
+        if (!expectedTag.SequenceEqual(tag)) throw new CryptographicException("HMAC verification failed.");
         return cipherData;
     }
 
