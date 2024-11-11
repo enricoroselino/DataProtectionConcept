@@ -36,7 +36,7 @@ public abstract class AesBaseCipher : IDisposable, IAsyncDisposable
         byte[] plainData,
         CancellationToken cancellationToken = default)
     {
-        var encryptor = AesCipher.CreateEncryptor(AesCipher.Key, AesCipher.IV);
+        using var encryptor = AesCipher.CreateEncryptor(AesCipher.Key, AesCipher.IV);
 
         // encrypt in one shot to save resources, not using CryptoStream if possible
         if (encryptor.CanTransformMultipleBlocks)
@@ -51,7 +51,7 @@ public abstract class AesBaseCipher : IDisposable, IAsyncDisposable
 
     protected async Task<byte[]> TransformToPlainText(byte[] cipherText, CancellationToken cancellationToken = default)
     {
-        var decryptor = AesCipher.CreateDecryptor(AesCipher.Key, AesCipher.IV);
+        using var decryptor = AesCipher.CreateDecryptor(AesCipher.Key, AesCipher.IV);
 
         // idk if decrypt can use the same way like encrypting, just leave using CryptoStream
         using var ms = new MemoryStream(cipherText);
