@@ -11,7 +11,7 @@ public class AesEcbCipher : AesBaseCipher, ICipher
 {
     public AesEcbCipher(IOptions<CipherSettings> options) : base(options)
     {
-        AesConcrete.Mode = CipherMode.ECB;
+        AesCipher.Mode = CipherMode.ECB;
     }
 
     public async Task<byte[]> Encrypt(byte[] plainDataBytes, CancellationToken cancellationToken = default)
@@ -20,7 +20,7 @@ public class AesEcbCipher : AesBaseCipher, ICipher
 
         async Task<byte[]> EncryptAction()
         {
-            var encryptor = AesConcrete.CreateEncryptor(this.Key, null);
+            var encryptor = AesCipher.CreateEncryptor(this.Key, null);
 
             using var ms = new MemoryStream();
             await using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
@@ -36,7 +36,7 @@ public class AesEcbCipher : AesBaseCipher, ICipher
 
         async Task<byte[]> Function()
         {
-            var decryptor = AesConcrete.CreateDecryptor(this.Key, null);
+            var decryptor = AesCipher.CreateDecryptor(this.Key, null);
 
             using var ms = new MemoryStream(encryptedDataBytes);
             await using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);

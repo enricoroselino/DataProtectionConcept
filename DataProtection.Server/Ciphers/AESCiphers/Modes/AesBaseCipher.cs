@@ -5,13 +5,13 @@ namespace DataProtection.Server.Ciphers.AESCiphers.Modes;
 
 public abstract class AesBaseCipher : IDisposable, IAsyncDisposable
 {
-    protected readonly Aes AesConcrete;
+    protected readonly SymmetricAlgorithm AesCipher;
     private const int KeyDefinedLength = 32;
 
     protected byte[] Key
     {
-        get => AesConcrete.Key;
-        private init => AesConcrete.Key = value;
+        get => AesCipher.Key;
+        private init => AesCipher.Key = value;
     }
 
     protected AesBaseCipher(IOptions<CipherSettings> options)
@@ -25,15 +25,15 @@ public abstract class AesBaseCipher : IDisposable, IAsyncDisposable
 
         ArgumentOutOfRangeException.ThrowIfNotEqual(saltedKey.Length, KeyDefinedLength);
 
-        AesConcrete = Aes.Create();
-        AesConcrete.Padding = PaddingMode.PKCS7;
-        AesConcrete.KeySize = 256;
+        AesCipher = Aes.Create();
+        AesCipher.Padding = PaddingMode.PKCS7;
+        AesCipher.KeySize = 256;
         Key = saltedKey;
     }
 
     public void Dispose()
     {
-        AesConcrete.Dispose();
+        AesCipher.Dispose();
         GC.SuppressFinalize(this);
     }
 

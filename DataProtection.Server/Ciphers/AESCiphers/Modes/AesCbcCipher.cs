@@ -13,13 +13,13 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
 
     private byte[] IV
     {
-        get => AesConcrete.IV;
-        set => AesConcrete.IV = value;
+        get => AesCipher.IV;
+        set => AesCipher.IV = value;
     }
 
     public AesCbcCipher(IOptions<CipherSettings> options) : base(options)
     {
-        AesConcrete.Mode = CipherMode.CBC;
+        AesCipher.Mode = CipherMode.CBC;
     }
 
     public async Task<byte[]> Encrypt(byte[] plainDataBytes, CancellationToken cancellationToken = default)
@@ -30,8 +30,8 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
         {
             // CBC IV should be unique every encryption
             GenerateIv();
-            var encryptor = AesConcrete.CreateEncryptor(this.Key, this.IV);
-
+            var encryptor = AesCipher.CreateEncryptor(this.Key, this.IV);
+            
             using var ms = new MemoryStream();
             await using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
             await cs.WriteAsync(plainDataBytes, cancellationToken);
@@ -50,7 +50,7 @@ public sealed class AesCbcCipher : AesBaseCipher, ICipher
         {
             var cipherData = ExtractData(encryptedDataBytes);
 
-            var decryptor = AesConcrete.CreateDecryptor(this.Key, this.IV);
+            var decryptor = AesCipher.CreateDecryptor(this.Key, this.IV);
             using var ms = new MemoryStream(cipherData);
             await using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
 
