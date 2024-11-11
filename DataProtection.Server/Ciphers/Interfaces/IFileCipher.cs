@@ -4,5 +4,5 @@ public interface IFileCipher
 {
     public string Suffix { get; }
     public Task<byte[]> Encrypt(IFormFile file, CancellationToken cancellationToken = default);
-    public Task<byte[]> Decrypt(byte[] data, CancellationToken cancellationToken = default);
+    public Task<byte[]> Decrypt(byte[] encryptedData, CancellationToken cancellationToken = default);
 }
