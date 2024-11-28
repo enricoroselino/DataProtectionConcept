@@ -12,16 +12,19 @@ public sealed class LocalFileHandler : IFileHandler
         _fileCipher = fileCipher;
     }
 
-    public async Task Save(Stream fileStream, string filePath, CancellationToken cancellationToken = default)
+    public async Task Save(Stream inputStream, string filePath, CancellationToken cancellationToken = default)
     {
         var savePath = ProcessFilename(filePath);
-        await using var encrypted = await _fileCipher.Encrypt(fileStream, cancellationToken);
-        await File.WriteAllBytesAsync(savePath, encrypted.ToArray(), cancellationToken);
+
+        await using var encrypted = await _fileCipher.Encrypt(inputStream, cancellationToken);
+        await using var fileStream = File.Create(savePath);
+        await encrypted.CopyToAsync(fileStream, cancellationToken);
     }
 
     public async Task<MemoryStream> Load(string filePath, CancellationToken cancellationToken = default)
     {
         var filename = ProcessFilename(filePath);
+
         await using var fileStream = File.OpenRead(filename);
         return await _fileCipher.Decrypt(fileStream, cancellationToken);
     }

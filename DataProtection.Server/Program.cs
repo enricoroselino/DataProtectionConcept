@@ -61,11 +61,11 @@ app.MapPost("/upload",
         async (IFormFile file, IFileHandler fileHandler, CancellationToken cancellationToken) =>
         {
             var savePath = Path.Combine("FileStore", file.FileName);
-            
+
             await using var fileStream = file.OpenReadStream();
             await fileHandler.Save(fileStream, savePath, cancellationToken);
 
-            // do not use using here on loaded memory stream
+            // LEAVE OPEN TO RETURNED VIA Result.File
             var loadStream = await fileHandler.Load(savePath, cancellationToken);
             return Results.File(loadStream, file.ContentType);
         })

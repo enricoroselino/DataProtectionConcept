@@ -29,7 +29,9 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
         await encryptedStream.WriteAsync(_baseCipher.IV, cancellationToken);
 
         using var encryptor = _baseCipher.CreateEncryptor(_baseCipher.Key, _baseCipher.IV);
-        await using var cryptoStream = new CryptoStream(encryptedStream, encryptor, CryptoStreamMode.Write);
+
+        // LEAVE OPEN THE CRYPTO STREAM
+        var cryptoStream = new CryptoStream(encryptedStream, encryptor, CryptoStreamMode.Write, leaveOpen: true);
         await request.CopyToAsync(cryptoStream, cancellationToken);
         await cryptoStream.FlushFinalBlockAsync(cancellationToken);
 
@@ -42,18 +44,25 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
         if (!request.CanSeek) throw new IOException("Stream must be seekable");
         request.Seek(0, SeekOrigin.Begin);
 
-        var ivBuffer = new byte[IvSize];
-        await request.ReadExactlyAsync(ivBuffer, cancellationToken);
-        ArgumentOutOfRangeException.ThrowIfNotEqual(ivBuffer.Length, IvSize);
-        _baseCipher.IV = ivBuffer;
+        await ExtractIv(request, cancellationToken);
 
         var decryptedStream = new MemoryStream();
         using var decryptor = _baseCipher.CreateDecryptor(_baseCipher.Key, _baseCipher.IV);
-        await using var cryptoStream = new CryptoStream(request, decryptor, CryptoStreamMode.Read);
+
+        // LEAVE OPEN THE CRYPTO STREAM
+        var cryptoStream = new CryptoStream(request, decryptor, CryptoStreamMode.Read, leaveOpen: true);
         await cryptoStream.CopyToAsync(decryptedStream, cancellationToken);
 
         decryptedStream.Seek(0, SeekOrigin.Begin);
         return decryptedStream;
+    }
+
+    private async Task ExtractIv(Stream request, CancellationToken cancellationToken = default)
+    {
+        var ivBuffer = new byte[IvSize];
+        await request.ReadExactlyAsync(ivBuffer, cancellationToken);
+        ArgumentOutOfRangeException.ThrowIfNotEqual(ivBuffer.Length, IvSize);
+        _baseCipher.IV = ivBuffer;
     }
 
     protected override void Dispose(bool disposing)
