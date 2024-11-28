@@ -2,6 +2,6 @@
 
 public interface IFileCipher
 {
-    public Task<byte[]> Encrypt(Stream input, CancellationToken cancellationToken = default);
-    public Task<byte[]> Decrypt(Stream input, CancellationToken cancellationToken = default);
+    public Task<MemoryStream> Encrypt(Stream input, CancellationToken cancellationToken = default);
+    public Task<MemoryStream> Decrypt(Stream input, CancellationToken cancellationToken = default);
 }

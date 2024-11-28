@@ -13,17 +13,15 @@ public sealed class FileCipher : IFileCipher
         _options = options;
     }
 
-    public async Task<byte[]> Encrypt(Stream input, CancellationToken cancellationToken = default)
+    public async Task<MemoryStream> Encrypt(Stream input, CancellationToken cancellationToken = default)
     {
         await using var cipher = CipherDefined;
-        await using var encrypted = await cipher.Encrypt(input, cancellationToken);
-        return encrypted.ToArray();
+        return await cipher.Encrypt(input, cancellationToken);
     }
 
-    public async Task<byte[]> Decrypt(Stream input, CancellationToken cancellationToken = default)
+    public async Task<MemoryStream> Decrypt(Stream input, CancellationToken cancellationToken = default)
     {
         await using var cipher = CipherDefined;
-        await using var decrypted = await cipher.Decrypt(input, cancellationToken);
-        return decrypted.ToArray();
+        return await cipher.Decrypt(input, cancellationToken);
     }
 }
