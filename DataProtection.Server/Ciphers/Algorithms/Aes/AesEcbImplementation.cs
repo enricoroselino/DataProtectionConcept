@@ -18,7 +18,7 @@ public sealed class AesEcbImplementation : AesBase, IAesCipher
 
     public async Task<MemoryStream> Encrypt(Stream request, CancellationToken cancellationToken = default)
     {
-        request.Position = 0;
+        request.Seek(0, SeekOrigin.Begin);
 
         // ECB doesnt need to generate IV
         var encryptedStream = new MemoryStream();
@@ -28,7 +28,7 @@ public sealed class AesEcbImplementation : AesBase, IAesCipher
         await cryptoStream.FlushFinalBlockAsync(cancellationToken);
 
         // reset position before returning
-        encryptedStream.Position = 0;
+        encryptedStream.Seek(0, SeekOrigin.Begin);
         return encryptedStream;
     }
 

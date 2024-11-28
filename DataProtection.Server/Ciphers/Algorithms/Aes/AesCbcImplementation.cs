@@ -50,7 +50,7 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
         await using var cryptoStream = new CryptoStream(request, decryptor, CryptoStreamMode.Read);
         await cryptoStream.CopyToAsync(decryptedStream, cancellationToken);
 
-        decryptedStream.Position = 0;
+        decryptedStream.Seek(0, SeekOrigin.Begin);
         return decryptedStream;
     }
 
