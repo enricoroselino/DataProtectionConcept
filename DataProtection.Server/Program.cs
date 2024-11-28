@@ -60,10 +60,14 @@ app.MapGet("/employee", async (AppDbContext dbContext) =>
 app.MapPost("/upload",
         async (IFormFile file, IFileHandler fileHandler, CancellationToken cancellationToken) =>
         {
-            await fileHandler.Save(file, cancellationToken);
-            var fileContents = await fileHandler.Load(file.FileName, cancellationToken);
+            var savePath = Path.Combine("FileStore", file.FileName);
+            
+            await using var fileStream = file.OpenReadStream();
+            await fileHandler.Save(fileStream, savePath, cancellationToken);
 
-            return Results.File(fileContents, file.ContentType);
+            // do not use using here on loaded memory stream
+            var loadStream = await fileHandler.Load(savePath, cancellationToken);
+            return Results.File(loadStream, file.ContentType);
         })
     .DisableAntiforgery();
 

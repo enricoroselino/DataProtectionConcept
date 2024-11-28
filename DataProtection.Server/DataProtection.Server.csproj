@@ -26,4 +26,8 @@
         <Compile Remove="Ciphers\FileCipherFactory.cs" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="FileStore\" />
+    </ItemGroup>
+
 </Project>

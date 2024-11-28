@@ -2,6 +2,6 @@
 
 public interface IFileHandler
 {
-    public Task Save(IFormFile file, CancellationToken cancellationToken = default);
-    public Task<byte[]> Load(string filePath, CancellationToken cancellationToken = default);
+    public Task Save(Stream fileStream, string filePath, CancellationToken cancellationToken = default);
+    public Task<MemoryStream> Load(string filePath, CancellationToken cancellationToken = default);
 }
