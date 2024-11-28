@@ -26,18 +26,24 @@ public sealed class AesEcbImplementation : AesBase, IAesCipher
         await using var cryptoStream = new CryptoStream(encryptedStream, encryptor, CryptoStreamMode.Write);
         await request.CopyToAsync(cryptoStream, cancellationToken);
         await cryptoStream.FlushFinalBlockAsync(cancellationToken);
+
+        // reset position before returning
+        encryptedStream.Position = 0;
         return encryptedStream;
     }
 
     public async Task<MemoryStream> Decrypt(Stream request, CancellationToken cancellationToken = default)
     {
-        request.Position = 0;
+        request.Seek(0, SeekOrigin.Begin);
 
         // ECB doesnt need IV to decrypt
         var decryptedStream = new MemoryStream();
         using var decryptor = _baseCipher.CreateDecryptor(_baseCipher.Key, _baseCipher.IV);
         await using var cryptoStream = new CryptoStream(request, decryptor, CryptoStreamMode.Read);
         await cryptoStream.CopyToAsync(decryptedStream, cancellationToken);
+
+        // reset position before returning
+        decryptedStream.Seek(0, SeekOrigin.Begin);
         return decryptedStream;
     }
 

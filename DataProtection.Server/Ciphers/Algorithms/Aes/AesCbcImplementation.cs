@@ -19,7 +19,7 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
 
     public async Task<MemoryStream> Encrypt(Stream request, CancellationToken cancellationToken = default)
     {
-        request.Position = 0;
+        request.Seek(0, SeekOrigin.Begin);
 
         _baseCipher.GenerateIV();
         ArgumentOutOfRangeException.ThrowIfNotEqual(_baseCipher.IV.Length, IvSize);
@@ -32,7 +32,7 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
         await request.CopyToAsync(cryptoStream, cancellationToken);
         await cryptoStream.FlushFinalBlockAsync(cancellationToken);
 
-        encryptedStream.Position = 0;
+        encryptedStream.Seek(0, SeekOrigin.Begin);
         return encryptedStream;
     }
 
@@ -49,6 +49,8 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
         using var decryptor = _baseCipher.CreateDecryptor(_baseCipher.Key, _baseCipher.IV);
         await using var cryptoStream = new CryptoStream(request, decryptor, CryptoStreamMode.Read);
         await cryptoStream.CopyToAsync(decryptedStream, cancellationToken);
+
+        decryptedStream.Position = 0;
         return decryptedStream;
     }
 
