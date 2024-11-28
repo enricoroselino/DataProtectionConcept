@@ -1,4 +1,4 @@
-﻿using DataProtection.Server.Ciphers.Interfaces;
+﻿using DataProtection.Server.Ciphers;
 using DataProtection.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -20,15 +20,15 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        var textCipherConverter =
-            new ValueConverter<string, string>(
-                v => _cipher.Encrypt(v).GetAwaiter().GetResult(),
-                v => _cipher.Decrypt(v).GetAwaiter().GetResult()
-            );
+        // can't use dependency injection in Fluent API
+        var cryptoConverter = new ValueConverter<string, string>(
+            v => _cipher.Encrypt(v),
+            v => _cipher.Decrypt(v)
+        );
 
         modelBuilder.Entity<Employee>()
             .Property(e => e.Ssn)
-            .HasConversion(textCipherConverter)
+            .HasConversion(cryptoConverter)
             .IsRequired();
     }
 }

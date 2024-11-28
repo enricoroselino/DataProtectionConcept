@@ -1,42 +1,29 @@
-﻿using DataProtection.Server.Ciphers.AESCiphers;
-using DataProtection.Server.Ciphers.Interfaces;
+﻿using DataProtection.Server.Ciphers.Algorithms.Aes;
 using Microsoft.Extensions.Options;
 
 namespace DataProtection.Server.Ciphers;
 
-public class FileCipher : IFileCipher
+public sealed class FileCipher : IFileCipher
 {
-    private readonly IOptions<CipherSettings> _cipherOptions;
-    private const AesCipherMode CipherMode = AesCipherMode.CBC;
+    private readonly IOptions<AesCipherSettings> _options;
+    private IAesCipher CipherDefined => new AesCbcImplementation(_options);
 
-    public FileCipher(IOptions<CipherSettings> cipherOptions)
+    public FileCipher(IOptions<AesCipherSettings> options)
     {
-        _cipherOptions = cipherOptions;
+        _options = options;
     }
 
-    public string Suffix => $".enc.aes-{CipherMode.ToString().ToLower()}";
-
-    public async Task<byte[]> Encrypt(IFormFile file, CancellationToken cancellationToken = default)
+    public async Task<byte[]> Encrypt(Stream input, CancellationToken cancellationToken = default)
     {
-        return await Task.Run(EncryptFileAction, cancellationToken);
-
-        async Task<byte[]> EncryptFileAction()
-        {
-            await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
-            await using var fileStream = new MemoryStream();
-            await file.CopyToAsync(fileStream, cancellationToken);
-            return await cipher.Encrypt(fileStream.ToArray(), cancellationToken);
-        }
+        await using var cipher = CipherDefined;
+        await using var encrypted = await cipher.Encrypt(input, cancellationToken);
+        return encrypted.ToArray();
     }
 
-    public async Task<byte[]> Decrypt(byte[] encryptedData, CancellationToken cancellationToken = default)
+    public async Task<byte[]> Decrypt(Stream input, CancellationToken cancellationToken = default)
     {
-        return await Task.Run(DecryptFileAction, cancellationToken);
-
-        async Task<byte[]> DecryptFileAction()
-        {
-            await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
-            return await cipher.Decrypt(encryptedData, cancellationToken);
-        }
+        await using var cipher = CipherDefined;
+        await using var decrypted = await cipher.Decrypt(input, cancellationToken);
+        return decrypted.ToArray();
     }
 }

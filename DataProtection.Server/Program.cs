@@ -1,12 +1,11 @@
 using DataProtection.Server;
 using DataProtection.Server.Ciphers;
-using DataProtection.Server.Ciphers.Interfaces;
+using DataProtection.Server.Ciphers.Algorithms.Aes;
 using DataProtection.Server.FileHandlers;
 using DataProtection.Server.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
-using NeoSmart.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-    
+
 builder.Services
     .AddAntiforgery()
     .Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = 15 * 1024 * 1024; });
@@ -23,8 +22,8 @@ builder.Services
     .AddScoped<ITextCipher, TextCipher>()
     .AddScoped<IFileCipher, FileCipher>()
     .AddScoped<IFileHandler, LocalFileHandler>()
-    .AddOptions<CipherSettings>()
-    .BindConfiguration(CipherSettings.Section);
+    .AddOptions<AesCipherSettings>()
+    .BindConfiguration(AesCipherSettings.Section);
 
 builder.Services.AddDbContext<AppDbContext>(options => { options.UseSqlite("Data Source=DataProtection.db"); });
 
@@ -61,9 +60,10 @@ app.MapGet("/employee", async (AppDbContext dbContext) =>
 app.MapPost("/upload",
         async (IFormFile file, IFileHandler fileHandler, CancellationToken cancellationToken) =>
         {
-            await fileHandler.Save(file,"", cancellationToken);
-            var bytes = await fileHandler.Load(file.FileName, cancellationToken);
-            return Results.Ok(UrlBase64.Encode(bytes));
+            await fileHandler.Save(file, cancellationToken);
+            var fileContents = await fileHandler.Load(file.FileName, cancellationToken);
+
+            return Results.File(fileContents, file.ContentType);
         })
     .DisableAntiforgery();
 

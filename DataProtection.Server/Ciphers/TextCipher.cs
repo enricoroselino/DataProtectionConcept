@@ -1,41 +1,47 @@
 ﻿using System.Text;
-using DataProtection.Server.Ciphers.AESCiphers;
-using DataProtection.Server.Ciphers.Interfaces;
+using DataProtection.Server.Ciphers.Algorithms.Aes;
 using Microsoft.Extensions.Options;
 using NeoSmart.Utils;
 
 namespace DataProtection.Server.Ciphers;
 
-/// <summary>
-/// Database cipher using AES256 ECB mode for consistency.
-/// </summary>
 public sealed class TextCipher : ITextCipher
 {
-    private const AesCipherMode CipherMode = AesCipherMode.ECB;
-    private readonly IOptions<CipherSettings> _cipherOptions;
+    private readonly IOptions<AesCipherSettings> _options;
+    private IAesCipher CipherDefined => new AesEcbImplementation(_options);
 
-    public TextCipher(IOptions<CipherSettings> cipherOptions)
+    public TextCipher(IOptions<AesCipherSettings> options)
     {
-        _cipherOptions = cipherOptions;
+        _options = options;
     }
 
-    public async Task<string> Encrypt(string plainText)
+    public async Task<string> EncryptAsync(string plainText, CancellationToken cancellationToken = default)
     {
-        await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
-        var plainBytes = Encoding.UTF8.GetBytes(plainText);
+        var bytes = Encoding.UTF8.GetBytes(plainText);
+        await using var inputStream = new MemoryStream(bytes, writable: false);
 
-        // why are you encrypting null or blank value ?
-        ArgumentException.ThrowIfNullOrWhiteSpace(plainText);
-
-        var encrypted = await cipher.Encrypt(plainBytes);
-        return UrlBase64.Encode(encrypted);
+        await using var cipher = CipherDefined;
+        await using var result = await cipher.Encrypt(inputStream, cancellationToken);
+        return UrlBase64.Encode(result.ToArray());
     }
 
-    public async Task<string> Decrypt(string encryptedText)
+    public async Task<string> DecryptAsync(string cipherText, CancellationToken cancellationToken = default)
     {
-        var buffer = UrlBase64.Decode(encryptedText);
-        await using var cipher = AesCipherFactory.Create(CipherMode, _cipherOptions);
-        var decrypted = await cipher.Decrypt(buffer);
-        return Encoding.UTF8.GetString(decrypted);
+        var bytes = UrlBase64.Decode(cipherText);
+        await using var inputStream = new MemoryStream(bytes, writable: false);
+
+        await using var cipher = CipherDefined;
+        await using var result = await cipher.Decrypt(inputStream, cancellationToken);
+        return Encoding.UTF8.GetString(result.ToArray());
+    }
+
+    public string Encrypt(string plainText)
+    {
+        return EncryptAsync(plainText).GetAwaiter().GetResult();
+    }
+
+    public string Decrypt(string cipherText)
+    {
+        return DecryptAsync(cipherText).GetAwaiter().GetResult();
     }
 }
