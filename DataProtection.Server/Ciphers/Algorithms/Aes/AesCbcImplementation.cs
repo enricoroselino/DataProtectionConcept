@@ -19,6 +19,7 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
 
     public async Task<MemoryStream> Encrypt(Stream request, CancellationToken cancellationToken = default)
     {
+        if (!request.CanSeek) throw new IOException("Stream must be seekable");
         request.Seek(0, SeekOrigin.Begin);
 
         _baseCipher.GenerateIV();
@@ -38,6 +39,7 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
 
     public async Task<MemoryStream> Decrypt(Stream request, CancellationToken cancellationToken = default)
     {
+        if (!request.CanSeek) throw new IOException("Stream must be seekable");
         request.Seek(0, SeekOrigin.Begin);
 
         var ivBuffer = new byte[IvSize];

@@ -18,6 +18,7 @@ public sealed class AesEcbImplementation : AesBase, IAesCipher
 
     public async Task<MemoryStream> Encrypt(Stream request, CancellationToken cancellationToken = default)
     {
+        if (!request.CanSeek) throw new IOException("Stream must be seekable");
         request.Seek(0, SeekOrigin.Begin);
 
         // ECB doesnt need to generate IV
@@ -34,6 +35,7 @@ public sealed class AesEcbImplementation : AesBase, IAesCipher
 
     public async Task<MemoryStream> Decrypt(Stream request, CancellationToken cancellationToken = default)
     {
+        if (!request.CanSeek) throw new IOException("Stream must be seekable");
         request.Seek(0, SeekOrigin.Begin);
 
         // ECB doesnt need IV to decrypt
