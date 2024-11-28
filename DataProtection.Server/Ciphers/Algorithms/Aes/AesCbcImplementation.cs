@@ -38,7 +38,7 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
 
     public async Task<MemoryStream> Decrypt(Stream request, CancellationToken cancellationToken = default)
     {
-        request.Position = 0;
+        request.Seek(0, SeekOrigin.Begin);
 
         var ivBuffer = new byte[IvSize];
         await request.ReadExactlyAsync(ivBuffer, cancellationToken);
