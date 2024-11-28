@@ -67,7 +67,7 @@ app.MapPost("/upload",
 
             // LEAVE OPEN TO RETURNED VIA Result.File
             var loadStream = await fileHandler.Load(savePath, cancellationToken);
-            return Results.File(loadStream, file.ContentType);
+            return Results.File(loadStream, file.ContentType, enableRangeProcessing: false);
         })
     .DisableAntiforgery();
 
