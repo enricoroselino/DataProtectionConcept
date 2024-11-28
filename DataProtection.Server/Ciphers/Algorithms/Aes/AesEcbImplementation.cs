@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography;
+using DataProtection.Server.Ciphers.Models;
 using Microsoft.Extensions.Options;
 
 namespace DataProtection.Server.Ciphers.Algorithms.Aes;
@@ -16,41 +17,59 @@ public sealed class AesEcbImplementation : AesBase, IAesCipher
         _baseCipher.Key = Key;
     }
 
-    public async Task<MemoryStream> Encrypt(Stream request, CancellationToken cancellationToken = default)
+    public async Task<OutputStream> Encrypt(Stream request, CancellationToken cancellationToken = default)
     {
         if (!request.CanSeek) throw new IOException("Stream must be seekable");
         request.Seek(0, SeekOrigin.Begin);
 
+        var inputStream = new InputStream(request);
+        var outputStream = new OutputStream(new MemoryStream());
+
         // ECB doesnt need to generate IV
-        var encryptedStream = new MemoryStream();
+        await EncryptData(inputStream, outputStream, cancellationToken);
+
+        outputStream.Value.Seek(0, SeekOrigin.Begin);
+        return outputStream;
+    }
+
+    private async Task EncryptData(
+        InputStream request,
+        OutputStream encryptedStream,
+        CancellationToken cancellationToken = default)
+    {
         using var encryptor = _baseCipher.CreateEncryptor(_baseCipher.Key, _baseCipher.IV);
 
         // LEAVE OPEN THE CRYPTO STREAM
-        var cryptoStream = new CryptoStream(encryptedStream, encryptor, CryptoStreamMode.Write, leaveOpen: true);
-        await request.CopyToAsync(cryptoStream, cancellationToken);
+        var cryptoStream = new CryptoStream(encryptedStream.Value, encryptor, CryptoStreamMode.Write, leaveOpen: true);
+        await request.Value.CopyToAsync(cryptoStream, cancellationToken);
         await cryptoStream.FlushFinalBlockAsync(cancellationToken);
-
-        // reset position before returning
-        encryptedStream.Seek(0, SeekOrigin.Begin);
-        return encryptedStream;
     }
 
-    public async Task<MemoryStream> Decrypt(Stream request, CancellationToken cancellationToken = default)
+    public async Task<OutputStream> Decrypt(Stream request, CancellationToken cancellationToken = default)
     {
         if (!request.CanSeek) throw new IOException("Stream must be seekable");
         request.Seek(0, SeekOrigin.Begin);
 
+        var inputStream = new InputStream(request);
+        var outputStream = new OutputStream(new MemoryStream());
+
         // ECB doesnt need IV to decrypt
-        var decryptedStream = new MemoryStream();
+        await DecryptData(inputStream, outputStream, cancellationToken);
+
+        outputStream.Value.Seek(0, SeekOrigin.Begin);
+        return outputStream;
+    }
+
+    private async Task DecryptData(
+        InputStream request,
+        OutputStream decryptedStream,
+        CancellationToken cancellationToken = default)
+    {
         using var decryptor = _baseCipher.CreateDecryptor(_baseCipher.Key, _baseCipher.IV);
 
         // LEAVE OPEN THE CRYPTO STREAM
-        var cryptoStream = new CryptoStream(request, decryptor, CryptoStreamMode.Read, leaveOpen: true);
-        await cryptoStream.CopyToAsync(decryptedStream, cancellationToken);
-
-        // reset position before returning
-        decryptedStream.Seek(0, SeekOrigin.Begin);
-        return decryptedStream;
+        var cryptoStream = new CryptoStream(request.Value, decryptor, CryptoStreamMode.Read, leaveOpen: true);
+        await cryptoStream.CopyToAsync(decryptedStream.Value, cancellationToken);
     }
 
     protected override void Dispose(bool disposing)

@@ -16,7 +16,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services
     .AddAntiforgery()
-    .Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = 15 * 1024 * 1024; });
+    .Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = 51 * 1024 * 1024; });
 
 builder.Services
     .AddScoped<ITextCipher, TextCipher>()

@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography;
+using DataProtection.Server.Ciphers.Models;
 using Microsoft.Extensions.Options;
 
 namespace DataProtection.Server.Ciphers.Algorithms.Aes;
@@ -17,52 +18,75 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
         _baseCipher.Key = Key;
     }
 
-    public async Task<MemoryStream> Encrypt(Stream request, CancellationToken cancellationToken = default)
+    public async Task<OutputStream> Encrypt(Stream request, CancellationToken cancellationToken = default)
     {
         if (!request.CanSeek) throw new IOException("Stream must be seekable");
         request.Seek(0, SeekOrigin.Begin);
 
-        _baseCipher.GenerateIV();
-        ArgumentOutOfRangeException.ThrowIfNotEqual(_baseCipher.IV.Length, IvSize);
+        var inputStream = new InputStream(request);
+        var outputStream = new OutputStream(new MemoryStream());
 
-        var encryptedStream = new MemoryStream();
-        await encryptedStream.WriteAsync(_baseCipher.IV, cancellationToken);
+        await GenerateIv(outputStream, cancellationToken);
+        await EncryptData(inputStream, outputStream, cancellationToken);
 
+        outputStream.Value.Seek(0, SeekOrigin.Begin);
+        return outputStream;
+    }
+
+    private async Task EncryptData(
+        InputStream request,
+        OutputStream encryptedStream,
+        CancellationToken cancellationToken = default)
+    {
         using var encryptor = _baseCipher.CreateEncryptor(_baseCipher.Key, _baseCipher.IV);
 
         // LEAVE OPEN THE CRYPTO STREAM
-        var cryptoStream = new CryptoStream(encryptedStream, encryptor, CryptoStreamMode.Write, leaveOpen: true);
-        await request.CopyToAsync(cryptoStream, cancellationToken);
+        var cryptoStream = new CryptoStream(encryptedStream.Value, encryptor, CryptoStreamMode.Write, leaveOpen: true);
+        await request.Value.CopyToAsync(cryptoStream, cancellationToken);
         await cryptoStream.FlushFinalBlockAsync(cancellationToken);
-
-        encryptedStream.Seek(0, SeekOrigin.Begin);
-        return encryptedStream;
     }
 
-    public async Task<MemoryStream> Decrypt(Stream request, CancellationToken cancellationToken = default)
+    public async Task<OutputStream> Decrypt(Stream request, CancellationToken cancellationToken = default)
     {
         if (!request.CanSeek) throw new IOException("Stream must be seekable");
         request.Seek(0, SeekOrigin.Begin);
 
-        await ExtractIv(request, cancellationToken);
+        var inputStream = new InputStream(request);
+        var outputStream = new OutputStream(new MemoryStream());
+        
+        await ExtractIv(inputStream, cancellationToken);
+        await DecryptData(inputStream, outputStream, cancellationToken);
 
-        var decryptedStream = new MemoryStream();
+        outputStream.Value.Seek(0, SeekOrigin.Begin);
+        return outputStream;
+    }
+
+    private async Task DecryptData(
+        InputStream request,
+        OutputStream result,
+        CancellationToken cancellationToken = default)
+    {
         using var decryptor = _baseCipher.CreateDecryptor(_baseCipher.Key, _baseCipher.IV);
 
         // LEAVE OPEN THE CRYPTO STREAM
-        var cryptoStream = new CryptoStream(request, decryptor, CryptoStreamMode.Read, leaveOpen: true);
-        await cryptoStream.CopyToAsync(decryptedStream, cancellationToken);
-
-        decryptedStream.Seek(0, SeekOrigin.Begin);
-        return decryptedStream;
+        var cryptoStream = new CryptoStream(request.Value, decryptor, CryptoStreamMode.Read, leaveOpen: true);
+        await cryptoStream.CopyToAsync(result.Value, cancellationToken);
     }
 
-    private async Task ExtractIv(Stream request, CancellationToken cancellationToken = default)
+    private async Task GenerateIv(OutputStream encryptedStream, CancellationToken cancellationToken = default)
+    {
+        _baseCipher.GenerateIV();
+        ArgumentOutOfRangeException.ThrowIfNotEqual(_baseCipher.IV.Length, IvSize);
+        await encryptedStream.Value.WriteAsync(_baseCipher.IV, cancellationToken);
+    }
+
+    private async Task ExtractIv(InputStream request, CancellationToken cancellationToken = default)
     {
         var ivBuffer = new byte[IvSize];
-        await request.ReadExactlyAsync(ivBuffer, cancellationToken);
-        ArgumentOutOfRangeException.ThrowIfNotEqual(ivBuffer.Length, IvSize);
+        await request.Value.ReadExactlyAsync(ivBuffer, cancellationToken);
         _baseCipher.IV = ivBuffer;
+
+        request.Value.Position = IvSize;
     }
 
     protected override void Dispose(bool disposing)

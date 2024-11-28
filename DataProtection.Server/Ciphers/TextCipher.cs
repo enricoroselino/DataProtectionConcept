@@ -21,7 +21,7 @@ public sealed class TextCipher : ITextCipher
         await using var inputStream = new MemoryStream(bytes, writable: false);
 
         await using var cipher = CipherDefined;
-        await using var result = await cipher.Encrypt(inputStream, cancellationToken);
+        await using var result = (await cipher.Encrypt(inputStream, cancellationToken)).Value;
         return UrlBase64.Encode(result.ToArray());
     }
 
@@ -31,7 +31,7 @@ public sealed class TextCipher : ITextCipher
         await using var inputStream = new MemoryStream(bytes, writable: false);
 
         await using var cipher = CipherDefined;
-        await using var result = await cipher.Decrypt(inputStream, cancellationToken);
+        await using var result = (await cipher.Decrypt(inputStream, cancellationToken)).Value;
         return Encoding.UTF8.GetString(result.ToArray());
     }
 

@@ -16,12 +16,14 @@ public sealed class FileCipher : IFileCipher
     public async Task<MemoryStream> Encrypt(Stream input, CancellationToken cancellationToken = default)
     {
         await using var cipher = CipherDefined;
-        return await cipher.Encrypt(input, cancellationToken);
+        var result = await cipher.Encrypt(input, cancellationToken);
+        return result.Value;
     }
 
     public async Task<MemoryStream> Decrypt(Stream input, CancellationToken cancellationToken = default)
     {
         await using var cipher = CipherDefined;
-        return await cipher.Decrypt(input, cancellationToken);
+        var result = await cipher.Decrypt(input, cancellationToken);
+        return result.Value;
     }
 }
