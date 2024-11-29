@@ -87,6 +87,7 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
             throw new InvalidDataException("Invalid authentication tag, data is tampered");
 
         // remove tag from the actual stream for further process
+        request.Value.Seek(0, SeekOrigin.Begin);
         request.Value.SetLength(withoutTagSize);
     }
 
