@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 
 namespace DataProtection.Server.Ciphers;
@@ -16,5 +17,15 @@ public static class CryptoHelper
         );
 
         return saltedKey;
+    }
+
+    public static async Task<byte[]> ComputeHash(
+        Stream request,
+        byte[] key,
+        CancellationToken cancellationToken = default)
+    {
+        using var hmac = new HMACSHA256(key);
+        var computedHash = await hmac.ComputeHashAsync(request, cancellationToken);
+        return computedHash;
     }
 }
