@@ -7,7 +7,9 @@ public static class StreamExtensions
         if (stream is MemoryStream memoryStream) return memoryStream;
 
         var convertedStream = new MemoryStream();
+        stream.Seek(0, SeekOrigin.Begin);
         stream.CopyTo(convertedStream);
+
         convertedStream.Seek(0, SeekOrigin.Begin);
         return convertedStream;
     }
