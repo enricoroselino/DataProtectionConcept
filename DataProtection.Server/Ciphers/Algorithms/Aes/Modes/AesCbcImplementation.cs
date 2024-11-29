@@ -69,26 +69,18 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
 
     private async Task ValidateAuthTag(InputStream request, CancellationToken cancellationToken = default)
     {
-        request.Value.Seek(0, SeekOrigin.Begin);
-        await using var toComputeStream = new MemoryStream();
-        await request.Value.CopyToAsync(toComputeStream, cancellationToken);
-
-        // remove the tag to compute hash
-        var withoutTagSize = request.Value.Length - TagSize;
-        toComputeStream.SetLength(withoutTagSize);
-        toComputeStream.Seek(0, SeekOrigin.Begin);
-        var computedTag = await CryptoHelper.ComputeHash(toComputeStream, Key, cancellationToken);
+        var sizeWithoutTag = request.Value.Length - TagSize;
 
         var fileTag = new byte[TagSize];
-        request.Value.Position = request.Value.Length - TagSize;
+        request.Value.Position = sizeWithoutTag;
         await request.Value.ReadExactlyAsync(fileTag, cancellationToken);
+
+        request.Value.Seek(0, SeekOrigin.Begin);
+        request.Value.SetLength(sizeWithoutTag);
+        var computedTag = await CryptoHelper.ComputeHash(request.Value, Key, cancellationToken);
 
         if (!fileTag.SequenceEqual(computedTag))
             throw new InvalidDataException("Invalid authentication tag, data is tampered");
-
-        // remove tag from the actual stream for further process
-        request.Value.Seek(0, SeekOrigin.Begin);
-        request.Value.SetLength(withoutTagSize);
     }
 
     private async Task GenerateIv(OutputStream result, CancellationToken cancellationToken = default)

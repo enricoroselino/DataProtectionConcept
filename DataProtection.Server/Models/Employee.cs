@@ -10,8 +10,8 @@ public class Employee
     }
 
     public Guid Id { get; private set; }
-    public string Name { get; private set; }
-    public string Ssn { get; private set; }
+    public string Name { get; private set; } = default!;
+    public string Ssn { get; private set; } = default!;
 
     public static Employee CreateNew(string name, string ssn)
     {
