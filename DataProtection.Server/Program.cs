@@ -16,7 +16,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services
     .AddAntiforgery()
-    .Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = 51 * 1024 * 1024; });
+    .Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = 1024 * 1024 * 1024; });
 
 builder.Services
     .AddOptions<AesCipherSettings>()
@@ -25,8 +25,8 @@ builder.Services
     .ValidateOnStart();
 
 builder.Services
-    .AddSingleton<ITextCipher, TextCipher>()
-    .AddSingleton<IFileCipher, FileCipher>()
+    .AddTransient<ITextCipher, TextCipher>()
+    .AddTransient<IFileCipher, FileCipher>()
     .AddScoped<IFileHandler, LocalFileHandler>();
 
 builder.Services.AddDbContext<AppDbContext>(options => { options.UseSqlite("Data Source=DataProtection.db"); });
