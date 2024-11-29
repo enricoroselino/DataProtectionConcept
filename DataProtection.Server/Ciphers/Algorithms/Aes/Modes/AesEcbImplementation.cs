@@ -11,9 +11,9 @@ public sealed class AesEcbImplementation : AesBase, IAesCipher
         BaseCipher.Mode = CipherMode.ECB;
     }
 
-    public async Task<OutputStream> Encrypt(Stream request, CancellationToken cancellationToken = default)
+    public async Task<OutputStream> Encrypt(MemoryStream request, CancellationToken cancellationToken = default)
     {
-        var inputStream = new InputStream(request.ToMemoryStream());
+        var inputStream = new InputStream(request);
         var outputStream = new OutputStream(new MemoryStream());
 
         // ECB doesnt need to generate IV
@@ -24,9 +24,9 @@ public sealed class AesEcbImplementation : AesBase, IAesCipher
     }
 
 
-    public async Task<OutputStream> Decrypt(Stream request, CancellationToken cancellationToken = default)
+    public async Task<OutputStream> Decrypt(MemoryStream request, CancellationToken cancellationToken = default)
     {
-        var inputStream = new InputStream(request.ToMemoryStream());
+        var inputStream = new InputStream(request);
         var outputStream = new OutputStream(new MemoryStream());
 
         // ECB doesnt need IV to decrypt

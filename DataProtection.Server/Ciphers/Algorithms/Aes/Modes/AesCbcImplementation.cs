@@ -14,9 +14,9 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
         BaseCipher.Mode = CipherMode.CBC;
     }
 
-    public async Task<OutputStream> Encrypt(Stream request, CancellationToken cancellationToken = default)
+    public async Task<OutputStream> Encrypt(MemoryStream request, CancellationToken cancellationToken = default)
     {
-        var inputStream = new InputStream(request.ToMemoryStream());
+        var inputStream = new InputStream(request);
         var outputStream = new OutputStream(new MemoryStream());
 
         await GenerateIv(outputStream, cancellationToken);
@@ -36,9 +36,9 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
         return base.EncryptData(request, result, cancellationToken);
     }
 
-    public async Task<OutputStream> Decrypt(Stream request, CancellationToken cancellationToken = default)
+    public async Task<OutputStream> Decrypt(MemoryStream request, CancellationToken cancellationToken = default)
     {
-        var inputStream = new InputStream(request.ToMemoryStream());
+        var inputStream = new InputStream(request);
         var outputStream = new OutputStream(new MemoryStream());
 
         await ValidateAuthTag(inputStream, cancellationToken);

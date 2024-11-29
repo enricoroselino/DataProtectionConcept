@@ -44,13 +44,13 @@ public abstract class AesBase : IDisposable, IAsyncDisposable
                 // don't use buffer.AsMemory
                 await cryptoStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
             }
+
+            await cryptoStream.FlushFinalBlockAsync(cancellationToken);
         }
         finally
         {
             ArrayPool<byte>.Shared.Return(buffer);
         }
-
-        await cryptoStream.FlushFinalBlockAsync(cancellationToken);
     }
 
     protected virtual async Task DecryptData(

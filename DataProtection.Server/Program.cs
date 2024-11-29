@@ -67,7 +67,8 @@ app.MapPost("/upload",
             var savePath = Path.Combine("FileStore", file.FileName);
 
             await using var fileStream = file.OpenReadStream();
-            await fileHandler.Save(fileStream, savePath, cancellationToken);
+            await using var convertedStream = fileStream.ToMemoryStream();
+            await fileHandler.Save(convertedStream, savePath, cancellationToken);
 
             // LEAVE OPEN TO RETURNED VIA Result.File
             var loadStream = await fileHandler.Load(savePath, cancellationToken);
