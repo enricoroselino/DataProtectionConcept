@@ -2,7 +2,7 @@
 using DataProtection.Server.Ciphers.Models;
 using Microsoft.Extensions.Options;
 
-namespace DataProtection.Server.Ciphers.Algorithms.Aes;
+namespace DataProtection.Server.Ciphers.Algorithms.Aes.Modes;
 
 public sealed class AesCbcImplementation : AesBase, IAesCipher
 {

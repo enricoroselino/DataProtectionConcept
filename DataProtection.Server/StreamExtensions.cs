@@ -1,4 +1,4 @@
-﻿namespace DataProtection.Server.Ciphers.Algorithms;
+﻿namespace DataProtection.Server;
 
 public static class StreamExtensions
 {

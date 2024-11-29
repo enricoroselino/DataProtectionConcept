@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using DataProtection.Server.Ciphers.Algorithms.Aes;
+using DataProtection.Server.Ciphers.Algorithms.Aes.Modes;
 using Microsoft.Extensions.Options;
 using NeoSmart.Utils;
 
