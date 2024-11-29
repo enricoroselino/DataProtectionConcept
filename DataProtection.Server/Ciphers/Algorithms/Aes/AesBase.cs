@@ -10,7 +10,7 @@ public abstract class AesBase : IDisposable, IAsyncDisposable
     protected readonly byte[] Key;
     protected readonly SymmetricAlgorithm BaseCipher;
 
-    protected bool IsDisposed;
+    private bool _isDisposed;
 
     protected AesBase(IOptions<AesCipherSettings> options)
     {
@@ -31,7 +31,8 @@ public abstract class AesBase : IDisposable, IAsyncDisposable
         using var encryptor = BaseCipher.CreateEncryptor(BaseCipher.Key, BaseCipher.IV);
 
         // LEAVE OPEN THE CRYPTO STREAM
-        var cryptoStream = new CryptoStream(result.Value, encryptor, CryptoStreamMode.Write, leaveOpen: true);
+        await using var cryptoStream =
+            new CryptoStream(result.Value, encryptor, CryptoStreamMode.Write, leaveOpen: true);
         await request.Value.CopyToAsync(cryptoStream, cancellationToken);
         await cryptoStream.FlushFinalBlockAsync(cancellationToken);
     }
@@ -44,7 +45,8 @@ public abstract class AesBase : IDisposable, IAsyncDisposable
         using var decryptor = BaseCipher.CreateDecryptor(BaseCipher.Key, BaseCipher.IV);
 
         // LEAVE OPEN THE CRYPTO STREAM
-        var cryptoStream = new CryptoStream(request.Value, decryptor, CryptoStreamMode.Read, leaveOpen: true);
+        await using var cryptoStream =
+            new CryptoStream(request.Value, decryptor, CryptoStreamMode.Read, leaveOpen: true);
         await cryptoStream.CopyToAsync(result.Value, cancellationToken);
     }
 
@@ -65,7 +67,7 @@ public abstract class AesBase : IDisposable, IAsyncDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (IsDisposed) return;
+        if (_isDisposed) return;
 
         if (disposing)
         {
@@ -73,7 +75,7 @@ public abstract class AesBase : IDisposable, IAsyncDisposable
             BaseCipher.Dispose();
         }
 
-        IsDisposed = true;
+        _isDisposed = true;
     }
 
     // Finalizer

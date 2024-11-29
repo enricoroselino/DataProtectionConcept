@@ -25,8 +25,8 @@ builder.Services
     .ValidateOnStart();
 
 builder.Services
-    .AddScoped<ITextCipher, TextCipher>()
-    .AddScoped<IFileCipher, FileCipher>()
+    .AddSingleton<ITextCipher, TextCipher>()
+    .AddSingleton<IFileCipher, FileCipher>()
     .AddScoped<IFileHandler, LocalFileHandler>();
 
 builder.Services.AddDbContext<AppDbContext>(options => { options.UseSqlite("Data Source=DataProtection.db"); });
