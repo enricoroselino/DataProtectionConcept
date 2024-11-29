@@ -16,7 +16,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services
     .AddAntiforgery()
-    .Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = 51 * 1024 * 1024; });
+    .Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = 1024 * 1024 * 1024; });
 
 builder.Services
     .AddOptions<AesCipherSettings>()
@@ -25,8 +25,8 @@ builder.Services
     .ValidateOnStart();
 
 builder.Services
-    .AddSingleton<ITextCipher, TextCipher>()
-    .AddSingleton<IFileCipher, FileCipher>()
+    .AddScoped<ITextCipher, TextCipher>()
+    .AddScoped<IFileCipher, FileCipher>()
     .AddScoped<IFileHandler, LocalFileHandler>();
 
 builder.Services.AddDbContext<AppDbContext>(options => { options.UseSqlite("Data Source=DataProtection.db"); });
@@ -67,7 +67,8 @@ app.MapPost("/upload",
             var savePath = Path.Combine("FileStore", file.FileName);
 
             await using var fileStream = file.OpenReadStream();
-            await fileHandler.Save(fileStream, savePath, cancellationToken);
+            await using var convertedStream = fileStream.ToMemoryStream();
+            await fileHandler.Save(convertedStream, savePath, cancellationToken);
 
             // LEAVE OPEN TO RETURNED VIA Result.File
             var loadStream = await fileHandler.Load(savePath, cancellationToken);

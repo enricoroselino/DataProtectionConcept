@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Buffers;
+using System.Security.Cryptography;
 using DataProtection.Server.Ciphers.Models;
 using Microsoft.Extensions.Options;
 
@@ -29,12 +30,27 @@ public abstract class AesBase : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default)
     {
         using var encryptor = BaseCipher.CreateEncryptor(BaseCipher.Key, BaseCipher.IV);
+        const CryptoStreamMode mode = CryptoStreamMode.Write;
+        await using var cryptoStream = new CryptoStream(result.Value, encryptor, mode, leaveOpen: true);
 
-        // LEAVE OPEN THE CRYPTO STREAM
-        await using var cryptoStream =
-            new CryptoStream(result.Value, encryptor, CryptoStreamMode.Write, leaveOpen: true);
-        await request.Value.CopyToAsync(cryptoStream, cancellationToken);
-        await cryptoStream.FlushFinalBlockAsync(cancellationToken);
+        var chunkSize = ChunkSizeFactory.Get(request.Value.Length);
+        var buffer = ArrayPool<byte>.Shared.Rent(chunkSize);
+
+        try
+        {
+            int bytesRead;
+            while ((bytesRead = await request.Value.ReadAsync(buffer, cancellationToken)) > 0)
+            {
+                // don't use buffer.AsMemory
+                await cryptoStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+            }
+
+            await cryptoStream.FlushFinalBlockAsync(cancellationToken);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
     protected virtual async Task DecryptData(
@@ -43,11 +59,25 @@ public abstract class AesBase : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default)
     {
         using var decryptor = BaseCipher.CreateDecryptor(BaseCipher.Key, BaseCipher.IV);
+        const CryptoStreamMode mode = CryptoStreamMode.Read;
+        await using var cryptoStream = new CryptoStream(request.Value, decryptor, mode, leaveOpen: true);
 
-        // LEAVE OPEN THE CRYPTO STREAM
-        await using var cryptoStream =
-            new CryptoStream(request.Value, decryptor, CryptoStreamMode.Read, leaveOpen: true);
-        await cryptoStream.CopyToAsync(result.Value, cancellationToken);
+        var chunkSize = ChunkSizeFactory.Get(request.Value.Length);
+        var buffer = ArrayPool<byte>.Shared.Rent(chunkSize);
+
+        try
+        {
+            int bytesRead;
+            while ((bytesRead = await cryptoStream.ReadAsync(buffer, cancellationToken)) > 0)
+            {
+                // don't use buffer.AsMemory
+                await result.Value.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
     // Synchronous Dispose
