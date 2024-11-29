@@ -6,54 +6,42 @@ namespace DataProtection.Server.Ciphers.Algorithms.Aes;
 
 public sealed class AesCbcImplementation : AesBase, IAesCipher
 {
-    private readonly SymmetricAlgorithm _baseCipher;
     private const int IvSize = AesSizeConstant.IvSize;
+    private const int TagSize = AesSizeConstant.KeySize;
 
     public AesCbcImplementation(IOptions<AesCipherSettings> options) : base(options)
     {
-        _baseCipher = System.Security.Cryptography.Aes.Create();
-        _baseCipher.Padding = PaddingMode.PKCS7;
-        _baseCipher.KeySize = 256;
-        _baseCipher.Mode = CipherMode.CBC;
-        _baseCipher.Key = Key;
+        BaseCipher.Mode = CipherMode.CBC;
     }
 
     public async Task<OutputStream> Encrypt(Stream request, CancellationToken cancellationToken = default)
     {
-        if (!request.CanSeek) throw new IOException("Stream must be seekable");
-        request.Seek(0, SeekOrigin.Begin);
-
-        var inputStream = new InputStream(request);
+        var inputStream = new InputStream(request.ToMemoryStream());
         var outputStream = new OutputStream(new MemoryStream());
 
         await GenerateIv(outputStream, cancellationToken);
         await EncryptData(inputStream, outputStream, cancellationToken);
+        await GenerateAuthTag(outputStream, cancellationToken);
 
         outputStream.Value.Seek(0, SeekOrigin.Begin);
         return outputStream;
     }
 
-    private async Task EncryptData(
+    protected override Task EncryptData(
         InputStream request,
-        OutputStream encryptedStream,
+        OutputStream result,
         CancellationToken cancellationToken = default)
     {
-        using var encryptor = _baseCipher.CreateEncryptor(_baseCipher.Key, _baseCipher.IV);
-
-        // LEAVE OPEN THE CRYPTO STREAM
-        var cryptoStream = new CryptoStream(encryptedStream.Value, encryptor, CryptoStreamMode.Write, leaveOpen: true);
-        await request.Value.CopyToAsync(cryptoStream, cancellationToken);
-        await cryptoStream.FlushFinalBlockAsync(cancellationToken);
+        result.Value.Position = IvSize;
+        return base.EncryptData(request, result, cancellationToken);
     }
 
     public async Task<OutputStream> Decrypt(Stream request, CancellationToken cancellationToken = default)
     {
-        if (!request.CanSeek) throw new IOException("Stream must be seekable");
-        request.Seek(0, SeekOrigin.Begin);
-
-        var inputStream = new InputStream(request);
+        var inputStream = new InputStream(request.ToMemoryStream());
         var outputStream = new OutputStream(new MemoryStream());
-        
+
+        await ValidateAuthTag(inputStream, cancellationToken);
         await ExtractIv(inputStream, cancellationToken);
         await DecryptData(inputStream, outputStream, cancellationToken);
 
@@ -61,32 +49,62 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
         return outputStream;
     }
 
-    private async Task DecryptData(
+    protected override Task DecryptData(
         InputStream request,
         OutputStream result,
         CancellationToken cancellationToken = default)
     {
-        using var decryptor = _baseCipher.CreateDecryptor(_baseCipher.Key, _baseCipher.IV);
-
-        // LEAVE OPEN THE CRYPTO STREAM
-        var cryptoStream = new CryptoStream(request.Value, decryptor, CryptoStreamMode.Read, leaveOpen: true);
-        await cryptoStream.CopyToAsync(result.Value, cancellationToken);
+        request.Value.Position = IvSize;
+        return base.DecryptData(request, result, cancellationToken);
     }
 
-    private async Task GenerateIv(OutputStream encryptedStream, CancellationToken cancellationToken = default)
+    private async Task GenerateAuthTag(OutputStream result, CancellationToken cancellationToken = default)
     {
-        _baseCipher.GenerateIV();
-        ArgumentOutOfRangeException.ThrowIfNotEqual(_baseCipher.IV.Length, IvSize);
-        await encryptedStream.Value.WriteAsync(_baseCipher.IV, cancellationToken);
+        result.Value.Seek(0, SeekOrigin.Begin);
+        var tag = await CryptoHelper.ComputeHash(result.Value, Key, cancellationToken);
+
+        result.Value.Seek(0, SeekOrigin.End);
+        await result.Value.WriteAsync(tag, cancellationToken);
+    }
+
+    private async Task ValidateAuthTag(InputStream request, CancellationToken cancellationToken = default)
+    {
+        request.Value.Seek(0, SeekOrigin.Begin);
+        await using var toComputeStream = new MemoryStream();
+        await request.Value.CopyToAsync(toComputeStream, cancellationToken);
+
+        // remove the tag to compute hash
+        var withoutTagSize = request.Value.Length - TagSize;
+        toComputeStream.SetLength(withoutTagSize);
+        toComputeStream.Seek(0, SeekOrigin.Begin);
+        var computedTag = await CryptoHelper.ComputeHash(toComputeStream, Key, cancellationToken);
+
+        var fileTag = new byte[TagSize];
+        request.Value.Position = request.Value.Length - TagSize;
+        await request.Value.ReadExactlyAsync(fileTag, cancellationToken);
+
+        if (!fileTag.SequenceEqual(computedTag))
+            throw new InvalidDataException("Invalid authentication tag, data is tampered");
+
+        // remove tag from the actual stream for further process
+        request.Value.SetLength(withoutTagSize);
+    }
+
+    private async Task GenerateIv(OutputStream result, CancellationToken cancellationToken = default)
+    {
+        result.Value.Seek(0, SeekOrigin.Begin);
+
+        BaseCipher.GenerateIV();
+        await result.Value.WriteAsync(BaseCipher.IV, cancellationToken);
     }
 
     private async Task ExtractIv(InputStream request, CancellationToken cancellationToken = default)
     {
+        request.Value.Seek(0, SeekOrigin.Begin);
+
         var ivBuffer = new byte[IvSize];
         await request.Value.ReadExactlyAsync(ivBuffer, cancellationToken);
-        _baseCipher.IV = ivBuffer;
-
-        request.Value.Position = IvSize;
+        BaseCipher.IV = ivBuffer;
     }
 
     protected override void Dispose(bool disposing)
@@ -96,7 +114,6 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
         if (disposing)
         {
             // Dispose managed resources here
-            _baseCipher.Dispose();
         }
 
         base.Dispose(disposing);
