@@ -19,11 +19,15 @@ builder.Services
     .Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = 51 * 1024 * 1024; });
 
 builder.Services
+    .AddOptions<AesCipherSettings>()
+    .BindConfiguration(AesCipherSettings.Section)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services
     .AddScoped<ITextCipher, TextCipher>()
     .AddScoped<IFileCipher, FileCipher>()
-    .AddScoped<IFileHandler, LocalFileHandler>()
-    .AddOptions<AesCipherSettings>()
-    .BindConfiguration(AesCipherSettings.Section);
+    .AddScoped<IFileHandler, LocalFileHandler>();
 
 builder.Services.AddDbContext<AppDbContext>(options => { options.UseSqlite("Data Source=DataProtection.db"); });
 
