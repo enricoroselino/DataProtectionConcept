@@ -107,16 +107,4 @@ public sealed class AesCbcImplementation : AesBase, IAesCipher
         await request.Value.ReadExactlyAsync(ivBuffer, cancellationToken);
         BaseCipher.IV = ivBuffer;
     }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (IsDisposed) return;
-
-        if (disposing)
-        {
-            // Dispose managed resources here
-        }
-
-        base.Dispose(disposing);
-    }
 }

@@ -35,17 +35,4 @@ public sealed class AesEcbImplementation : AesBase, IAesCipher
         outputStream.Value.Seek(0, SeekOrigin.Begin);
         return outputStream;
     }
-
-
-    protected override void Dispose(bool disposing)
-    {
-        if (IsDisposed) return;
-
-        if (disposing)
-        {
-            // Dispose managed resources here
-        }
-
-        base.Dispose(disposing);
-    }
 }
