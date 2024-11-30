@@ -1,6 +1,5 @@
 using DataProtection.Server;
 using DataProtection.Server.Ciphers;
-using DataProtection.Server.Ciphers.Algorithms.Aes;
 using DataProtection.Server.FileHandlers;
 using DataProtection.Server.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -18,16 +17,7 @@ builder.Services
     .AddAntiforgery()
     .Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = 1024 * 1024 * 1024; });
 
-builder.Services
-    .AddOptions<AesCipherSettings>()
-    .BindConfiguration(AesCipherSettings.Section)
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
-
-builder.Services
-    .AddScoped<ITextCipher, TextCipher>()
-    .AddScoped<IFileCipher, FileCipher>()
-    .AddScoped<IFileHandler, LocalFileHandler>();
+builder.Services.AddCiphers();
 
 builder.Services.AddDbContext<AppDbContext>(options => { options.UseSqlite("Data Source=DataProtection.db"); });
 
