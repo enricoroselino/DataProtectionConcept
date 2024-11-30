@@ -23,7 +23,8 @@ public sealed class TextCipher : ITextCipher
 
         await using var cipher = CipherDefined;
         await using var result = (await cipher.Encrypt(inputStream, cancellationToken)).Value;
-        return UrlBase64.Encode(result.ToArray());
+        if (!result.TryGetBuffer(out var buffer)) throw new ApplicationException("Failed to get buffer");
+        return UrlBase64.Encode(buffer);
     }
 
     public async Task<string> DecryptAsync(string cipherText, CancellationToken cancellationToken = default)
@@ -33,7 +34,8 @@ public sealed class TextCipher : ITextCipher
 
         await using var cipher = CipherDefined;
         await using var result = (await cipher.Decrypt(inputStream, cancellationToken)).Value;
-        return Encoding.UTF8.GetString(result.ToArray());
+        if (!result.TryGetBuffer(out var buffer)) throw new ApplicationException("Failed to get buffer");
+        return Encoding.UTF8.GetString(buffer);
     }
 
     public string Encrypt(string plainText)
