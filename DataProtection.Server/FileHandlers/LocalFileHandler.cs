@@ -19,6 +19,7 @@ public sealed class LocalFileHandler : IFileHandler
         await using var encrypted = await _fileCipher.Encrypt(inputStream, cancellationToken);
         await using var fileStream = File.Create(savePath);
         await encrypted.CopyToAsync(fileStream, cancellationToken);
+        await fileStream.FlushAsync(cancellationToken);
     }
 
     public async Task<MemoryStream> Load(string filePath, CancellationToken cancellationToken = default)
