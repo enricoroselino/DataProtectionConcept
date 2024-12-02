@@ -14,7 +14,10 @@ In today's digital world, personal data security is essential for protecting ind
 
 
 ## Why Encryption is Important for Compliance
-Encryption is a key mechanism to secure personal data from unauthorized access, alteration, or disclosure. Both PDP and GDPR enforce strict rules about how data should be handled, stored, and transmitted. Encrypting sensitive data ensures: -  **Confidentiality**: Only authorized users can access the data. -  **Integrity**: Data cannot be altered without detection. -  **Accountability**: Access to data can be logged and audited.
+Encryption is a key mechanism to secure personal data from unauthorized access, alteration, or disclosure. Both PDP and GDPR enforce strict rules about how data should be handled, stored, and transmitted. Encrypting sensitive data ensures: 
+-  **Confidentiality**: Only authorized users can access the data. 
+-  **Integrity**: Data cannot be altered without detection. 
+-  **Accountability**: Access to data can be logged and audited.
 
 Failure to properly protect personal data can lead to legal consequences, including substantial fines, for both individuals and organizations.
 
@@ -24,7 +27,10 @@ Failure to properly protect personal data can lead to legal consequences, includ
 PDP, also known as the Personal Data Protection Act in Indonesia, outlines regulations for the protection of personal data, requiring businesses to take necessary actions to protect data privacy. Key aspects of PDP include: - Data subjects' consent for data processing. - The obligation to notify data subjects of data breaches. - Secure storage and transfer of personal data.
 
 ### GDPR (General Data Protection Regulation) 
-GDPR is a comprehensive regulation established by the European Union to safeguard personal data. It includes key principles such as: -  **Lawful Processing**: Personal data must be processed legally, transparently, and for specific purposes. -  **Data Minimization**: Only necessary data should be collected and retained. -  **Data Encryption**: Ensuring that personal data is encrypted where applicable to mitigate the risks of data breaches.
+GDPR is a comprehensive regulation established by the European Union to safeguard personal data. It includes key principles such as: 
+-  **Lawful Processing**: Personal data must be processed legally, transparently, and for specific purposes. 
+-  **Data Minimization**: Only necessary data should be collected and retained. 
+-  **Data Encryption**: Ensuring that personal data is encrypted where applicable to mitigate the risks of data breaches.
 
 ## Proof of Concept: Encrypting Text and Files 
 This repository demonstrates how you can use encryption in C# to comply with PDP and GDPR regulations. It covers encrypting both text and files in a straightforward manner using AES (Advanced Encryption Standard) and RSA (Rivest-Shamir-Adleman) algorithms. Encryption techniques are demonstrated in a simple and easy-to-understand manner to help developers comply with these laws. 
