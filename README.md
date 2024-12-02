@@ -24,7 +24,10 @@ Failure to properly protect personal data can lead to legal consequences, includ
 ## Overview of PDP and GDPR
 
 ### PDP (Perlindungan Data Pribadi) 
-PDP, also known as the Personal Data Protection Act in Indonesia, outlines regulations for the protection of personal data, requiring businesses to take necessary actions to protect data privacy. Key aspects of PDP include: - Data subjects' consent for data processing. - The obligation to notify data subjects of data breaches. - Secure storage and transfer of personal data.
+PDP, also known as the Personal Data Protection Act in Indonesia, outlines regulations for the protection of personal data, requiring businesses to take necessary actions to protect data privacy. Key aspects of PDP include: 
+- Data subjects' consent for data processing.
+- The obligation to notify data subjects of data breaches.
+- Secure storage and transfer of personal data.
 
 ### GDPR (General Data Protection Regulation) 
 GDPR is a comprehensive regulation established by the European Union to safeguard personal data. It includes key principles such as: 
